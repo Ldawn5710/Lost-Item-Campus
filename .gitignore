@@ -70,6 +70,10 @@ web_modules/
 .env.*
 !.env.example
 
+# Custom local environment variables containing sensitive keys
+# Safe Campus Map: Ensure that local credentials and Kakao Maps API Key are not published
+.env.local
+
 # parcel-bundler cache (https://parceljs.org/)
 .cache
 .parcel-cache
