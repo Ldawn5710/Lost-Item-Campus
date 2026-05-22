@@ -44,7 +44,7 @@ class SimulatedDatabase {
           user_id: 'user-snu-student-abc',
           type: 'lost',
           title: '아이패드 프로 11인치 스페이스 그레이',
-          category: '전자기기',
+          category: 'electronics',
           description: '301동 3층 302호 자습실에서 두고 나왔습니다. 키보드 폴리오 케이스가 끼워져 있고, 뒷면에 라이언 스티커가 붙어 있습니다. 중요한 과제 파일이 있어서 꼭 찾고 싶습니다 ㅜㅜ',
           image_url: '',
           latitude: 37.454950,
@@ -60,7 +60,7 @@ class SimulatedDatabase {
           user_id: 'user-snu-student-xyz',
           type: 'found',
           title: '검은색 카드지갑 (현금 포함)',
-          category: '지갑/카드',
+          category: 'wallet',
           description: '학생회관 앞 벤치 옆 잔디밭에서 발견했습니다. 신한카드랑 학생증(이*우) 들어있고, 현금 만원짜리 한 장 들어있습니다. 습득 후 현재 보관중입니다.',
           image_url: '',
           latitude: 37.459380,
@@ -76,7 +76,7 @@ class SimulatedDatabase {
           user_id: 'admin-snu-box',
           type: 'found', // Safe Box acts as an active found container
           title: '🔴 안심 보관소 - 학생회관 통합 경비실',
-          category: '기타',
+          category: 'others',
           description: '학생회관 1층 메인 복도 안쪽에 위치한 공식 행정/안심 수령소입니다. 야간 이동 및 허위 매칭이 불안할 시 이곳에 보관을 요청하시거나 수령 장소로 약속을 적극 권장합니다. (운영시간: 09:00 ~ 22:00)',
           image_url: '',
           latitude: 37.459200,
@@ -92,7 +92,7 @@ class SimulatedDatabase {
           user_id: 'admin-snu-box',
           type: 'found',
           title: '🔴 안심 보관소 - 인문관 경비데스크',
-          category: '기타',
+          category: 'others',
           description: '인문대 해동관 1층 입구 안내데스크입니다. 습득물 보관 대장이 비치되어 있어 안전하게 전달 및 대리 수령이 가능합니다.',
           image_url: '',
           latitude: 37.460950,
@@ -108,7 +108,7 @@ class SimulatedDatabase {
           user_id: 'user-snu-student-def',
           type: 'lost',
           title: '노란색 캐릭터 열쇠고리 키링',
-          category: '기타',
+          category: 'others',
           description: '관악사 삼거리 길 가다가 흘린 것 같습니다. 노란색 곰돌이 인형 키링이고 에어팟에 달아놓은 것입니다. 소중한 선물이라 꼭 찾고 싶어요.',
           image_url: '',
           latitude: 37.463200,
@@ -231,13 +231,27 @@ class SimulatedDatabase {
     localStorage.setItem(this.chatRoomsKey, JSON.stringify(rooms));
     
     // Insert introductory safety messages
+    const lang = (typeof window !== 'undefined' ? localStorage.getItem('language') : 'ko') || 'ko';
+    let welcomeMsg = '🤝 [안내] 1:1 안전 대화방이 활성화되었습니다.\n' +
+      '• 개인 연락처 노출 없이 안전하게 소통하실 수 있습니다.\n' +
+      '• 대면 만남 시 가급적 낮 시간대에 유동인구가 많은 교내 공개적인 장소(예: 학생회관 로비, 중앙도서관 입구 등)를 권장합니다.\n' +
+      '• 혹시 모를 오해 방지를 위해 습득 당시에 훼손된 흔적이 있다면 미리 상대방에게 알리고 전달해 주시기 바랍니다.';
+    if (lang === 'en') {
+      welcomeMsg = '🤝 [Guide] 1:1 Safe Chat Room has been activated.\n' +
+        '• Communicate safely without exposing personal contact details.\n' +
+        '• We recommend meeting in public campus areas during daylight hours (e.g., Student Center Lobby, Library Entrance).\n' +
+        '• To prevent misunderstandings, please disclose any damage present when the item was found.';
+    } else if (lang === 'vi') {
+      welcomeMsg = '🤝 [Hướng dẫn] Kênh trò chuyện an toàn 1:1 đã kích hoạt.\n' +
+        '• Liên lạc an toàn không cần lộ số điện thoại cá nhân.\n' +
+        '• Khuyến khích gặp nhau ban ngày tại nơi công cộng trong khuôn viên trường (VD: Sảnh hội sinh viên, sảnh thư viện).\n' +
+        '• Vui lòng báo trước nếu đồ vật có vết trầy xước từ lúc nhặt được để tránh hiểu lầm.';
+    }
+
     this.sendChatMessage(
       newRoom.id,
       'system',
-      '🤝 [안내] 1:1 안전 대화방이 활성화되었습니다.\n' +
-      '• 개인 연락처 노출 없이 안전하게 소통하실 수 있습니다.\n' +
-      '• 대면 만남 시 가급적 낮 시간대에 유동인구가 많은 교내 공개적인 장소(예: 학생회관 로비, 중앙도서관 입구 등)를 권장합니다.\n' +
-      '• 혹시 모를 오해 방지를 위해 습득 당시에 훼손된 흔적이 있다면 미리 상대방에게 알리고 전달해 주시기 바랍니다.',
+      welcomeMsg,
       true
     );
 

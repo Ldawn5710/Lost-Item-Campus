@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Search, Filter, PlusCircle, MessageSquare, MapPin, Calendar, Tag, FileText, ArrowRight, CheckCircle2, ChevronUp, ChevronDown } from 'lucide-react';
 import { Item, ItemType, ItemStatus, Profile } from '../lib/types';
+import { useTranslation } from '../lib/LanguageContext';
 
 interface BottomSheetProps {
   items: Item[];
@@ -37,9 +38,10 @@ export default function BottomSheet({
   onSelectChat,
   chatRooms,
 }: BottomSheetProps) {
+  const { t, language } = useTranslation();
   const [isOpen, setIsOpen] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('전체');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedType, setSelectedType] = useState<'all' | 'lost' | 'found'>('all');
   const [timeFilter, setTimeFilter] = useState<'all' | 'today' | '3days' | 'week'>('all');
 
@@ -47,12 +49,22 @@ export default function BottomSheet({
   const [regStep, setRegStep] = useState<1 | 2>(1);
   const [regType, setRegType] = useState<ItemType>('lost');
   const [regTitle, setRegTitle] = useState('');
-  const [regCategory, setRegCategory] = useState('전자기기');
+  const [regCategory, setRegCategory] = useState('electronics');
   const [regDetailLoc, setRegDetailLoc] = useState('');
   const [regDesc, setRegDesc] = useState('');
   const [regOccurredAt, setRegOccurredAt] = useState(new Date().toISOString().substring(0, 16));
 
-  const categories = ['전체', '전자기기', '지갑/카드', '의류', '화장품', '기타'];
+  const categories = ['all', 'electronics', 'wallet', 'clothing', 'cosmetics', 'others'];
+
+  const getLocaleString = (dateStr: string) => {
+    const localeMap = { ko: 'ko-KR', en: 'en-US', vi: 'vi-VN' };
+    return new Date(dateStr).toLocaleString(localeMap[language] || 'ko-KR');
+  };
+
+  const getLocaleDateString = (dateStr: string) => {
+    const localeMap = { ko: 'ko-KR', en: 'en-US', vi: 'vi-VN' };
+    return new Date(dateStr).toLocaleDateString(localeMap[language] || 'ko-KR', { month: 'short', day: 'numeric' });
+  };
 
   // 1. Filter Items
   const filteredItems = items.filter(item => {
@@ -63,7 +75,7 @@ export default function BottomSheet({
       item.location_detail.toLowerCase().includes(searchQuery.toLowerCase());
 
     // Category match
-    const matchCategory = selectedCategory === '전체' || item.category === selectedCategory;
+    const matchCategory = selectedCategory === 'all' || item.category === selectedCategory;
 
     // Type match
     const matchType =
@@ -158,7 +170,7 @@ export default function BottomSheet({
       {/* 1. Header Drag Handle */}
       <div style={styles.dragHandle} onClick={() => setIsOpen(!isOpen)}>
         {isOpen ? <ChevronDown size={22} color="var(--text-secondary)" /> : <ChevronUp size={22} color="var(--text-secondary)" />}
-        <span style={styles.handleTitle}>안심 캠퍼스 대시보드</span>
+        <span style={styles.handleTitle}>{t('tabs.dashboard')}</span>
       </div>
 
       {isOpen && (
@@ -168,7 +180,7 @@ export default function BottomSheet({
             <div style={styles.detailsView}>
               <div style={styles.detailsHeader}>
                 <button className="glass-button" style={styles.backBtn} onClick={() => onSelectItem(null)}>
-                  ← 돌아가기
+                  {t('common.back')}
                 </button>
                 <span style={{
                   ...styles.badge,
@@ -176,7 +188,7 @@ export default function BottomSheet({
                   color: selectedItem.type === 'lost' ? 'var(--accent-lost)' : 'var(--accent-found)',
                   border: `1px solid ${selectedItem.type === 'lost' ? 'var(--accent-lost)' : 'var(--accent-found)'}`
                 }}>
-                  {selectedItem.type === 'lost' ? '분실물' : '습득물'}
+                  {selectedItem.type === 'lost' ? t('details.lost_badge') : t('details.found_badge')}
                 </span>
               </div>
 
@@ -184,8 +196,8 @@ export default function BottomSheet({
                 <h3 style={styles.itemTitle}>{selectedItem.title}</h3>
                 
                 <div style={styles.metaRow}>
-                  <div style={styles.metaItem}><Tag size={14} /> <span>{selectedItem.category}</span></div>
-                  <div style={styles.metaItem}><Calendar size={14} /> <span>{new Date(selectedItem.occurred_at).toLocaleString('ko-KR')}</span></div>
+                  <div style={styles.metaItem}><Tag size={14} /> <span>{t(`category.${selectedItem.category}`)}</span></div>
+                  <div style={styles.metaItem}><Calendar size={14} /> <span>{getLocaleString(selectedItem.occurred_at)}</span></div>
                 </div>
 
                 <div style={styles.metaRow}>
@@ -194,7 +206,7 @@ export default function BottomSheet({
 
                 {selectedItem.description && (
                   <div style={styles.descriptionBox}>
-                    <h4 style={styles.sectionLabel}>상세 정보</h4>
+                    <h4 style={styles.sectionLabel}>{t('details.section_label')}</h4>
                     <p style={styles.descriptionText}>{selectedItem.description}</p>
                   </div>
                 )}
@@ -204,7 +216,7 @@ export default function BottomSheet({
                   <div style={styles.recommendBanner}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span className="pulse-indicator found"></span>
-                      <strong>[매칭 추천] 유사한 습득물이 발견되었습니다!</strong>
+                      <strong>{t('details.matching_recommend')}</strong>
                     </div>
                     <p style={styles.recommendDesc}>
                       {activeRecommend.title} ({activeRecommend.location_detail})
@@ -214,7 +226,7 @@ export default function BottomSheet({
                       style={styles.recommendBtn}
                       onClick={() => onSelectItem(activeRecommend)}
                     >
-                      해당 습득물 확인하기
+                      {t('details.matching_view')}
                     </button>
                   </div>
                 )}
@@ -229,15 +241,15 @@ export default function BottomSheet({
                     onClick={() => onStartChat(selectedItem)}
                   >
                     <MessageSquare size={18} />
-                    <span>실시간 1:1 대화로 물건 찾기</span>
+                    <span>{t('details.chat_btn')}</span>
                   </button>
                 ) : selectedItem.title.includes('안심 보관소') ? (
                   <div style={styles.safeBoxNotice}>
-                    * 본 보관소는 학교 소속 부서입니다. 상세 위치를 방문하시어 본인 인증 후 수령 가능합니다.
+                    {t('details.safebox_notice')}
                   </div>
                 ) : (
                   <div style={styles.myPostNotice}>
-                    ✓ 회원님이 등록하신 게시글입니다.
+                    {t('details.mypost_notice')}
                   </div>
                 )}
               </div>
@@ -251,19 +263,19 @@ export default function BottomSheet({
                   style={{ ...styles.tab, borderBottom: activeTab === 'explore' ? '2.5px solid var(--accent-found)' : 'none', color: activeTab === 'explore' ? 'var(--text-primary)' : 'var(--text-secondary)' }}
                   onClick={() => { setActiveTab('explore'); setIsRegistering(false); }}
                 >
-                  지도로 탐색
+                  {t('tabs.explore')}
                 </button>
                 <button
                   style={{ ...styles.tab, borderBottom: activeTab === 'register' ? '2.5px solid var(--accent-found)' : 'none', color: activeTab === 'register' ? 'var(--text-primary)' : 'var(--text-secondary)' }}
                   onClick={handleStartRegister}
                 >
-                  유실물 등록
+                  {t('tabs.register')}
                 </button>
                 <button
                   style={{ ...styles.tab, borderBottom: activeTab === 'chats' ? '2.5px solid var(--accent-found)' : 'none', color: activeTab === 'chats' ? 'var(--text-primary)' : 'var(--text-secondary)' }}
                   onClick={() => { setActiveTab('chats'); setIsRegistering(false); }}
                 >
-                  내 대화방 ({chatRooms.length})
+                  {t('tabs.chats', { count: chatRooms.length })}
                 </button>
               </div>
 
@@ -276,7 +288,7 @@ export default function BottomSheet({
                       <Search size={16} style={styles.searchIcon} />
                       <input
                         type="text"
-                        placeholder="분실물 품목명, 장소 검색..."
+                        placeholder={t('explore.search_placeholder')}
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="glass-input"
@@ -291,19 +303,19 @@ export default function BottomSheet({
                           style={{ ...styles.pill, background: selectedType === 'all' ? 'var(--accent-primary)' : 'rgba(255,255,255,0.05)' }}
                           onClick={() => setSelectedType('all')}
                         >
-                          전체
+                          {t('common.all')}
                         </button>
                         <button
                           style={{ ...styles.pill, background: selectedType === 'lost' ? 'var(--accent-lost)' : 'rgba(255,255,255,0.05)' }}
                           onClick={() => setSelectedType('lost')}
                         >
-                          🔴 분실물
+                          {t('explore.pill_lost')}
                         </button>
                         <button
                           style={{ ...styles.pill, background: selectedType === 'found' ? 'var(--accent-found)' : 'rgba(255,255,255,0.05)', color: selectedType === 'found' ? '#000000' : 'inherit' }}
                           onClick={() => setSelectedType('found')}
                         >
-                          🔵 습득물
+                          {t('explore.pill_found')}
                         </button>
                       </div>
 
@@ -315,7 +327,9 @@ export default function BottomSheet({
                         style={styles.selectFilter}
                       >
                         {categories.map(c => (
-                          <option key={c} value={c} style={{ background: '#0a0e1a' }}>{c}</option>
+                          <option key={c} value={c} style={{ background: '#0a0e1a' }}>
+                            {c === 'all' ? t('common.all') : t(`category.${c}`)}
+                          </option>
                         ))}
                       </select>
                     </div>
@@ -326,7 +340,7 @@ export default function BottomSheet({
                     {filteredItems.length === 0 ? (
                       <div style={styles.emptyState}>
                         <Filter size={32} color="var(--text-muted)" />
-                        <p>해당하는 유실물이 없습니다.</p>
+                        <p>{t('explore.no_items')}</p>
                       </div>
                     ) : (
                       filteredItems.map(item => (
@@ -342,10 +356,10 @@ export default function BottomSheet({
                               backgroundColor: item.type === 'lost' ? 'rgba(255, 74, 107, 0.15)' : 'rgba(0, 242, 254, 0.15)',
                               color: item.type === 'lost' ? 'var(--accent-lost)' : 'var(--accent-found)'
                             }}>
-                              {item.type === 'lost' ? '분실' : '습득'}
+                              {item.type === 'lost' ? t('explore.badge_lost') : t('explore.badge_found')}
                             </span>
                             <span style={styles.itemTime}>
-                              {new Date(item.occurred_at).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
+                              {getLocaleDateString(item.occurred_at)}
                             </span>
                           </div>
                           <h4 style={styles.listTitle}>{item.title}</h4>
@@ -367,14 +381,14 @@ export default function BottomSheet({
                     <div style={styles.wizardStep}>
                       <div style={styles.wizardGuide}>
                         <MapPin size={28} color="var(--accent-found)" />
-                        <h3>1단계: 분실/습득 발생 위치 지정</h3>
-                        <p>지도를 마우스로 클릭하거나 드래그하여 정확한 발생 포인트를 핀으로 지정해 주세요.</p>
+                        <h3>{t('reg.step1_title')}</h3>
+                        <p>{t('reg.step1_guide')}</p>
                       </div>
                       
                       <div style={styles.coordDisplay} className="glass-panel">
-                        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>선택된 주소</span>
+                        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{t('reg.selected_address')}</span>
                         <strong style={{ fontSize: '14px', marginTop: '4px' }}>
-                          {registrationCoords ? registrationAddress : '지도를 터치하여 지정하세요'}
+                          {registrationCoords ? registrationAddress : t('reg.tap_map_helper')}
                         </strong>
                       </div>
 
@@ -383,7 +397,7 @@ export default function BottomSheet({
                         style={{ marginTop: '12px', width: '100%' }}
                         onClick={handleNextRegisterStep}
                       >
-                        상세 정보 입력하기 <ArrowRight size={16} />
+                        {t('reg.next_btn')} <ArrowRight size={16} />
                       </button>
                     </div>
                   ) : (
@@ -392,29 +406,29 @@ export default function BottomSheet({
                         <div style={styles.typeSelector}>
                           <label style={{ ...styles.typeOption, border: regType === 'lost' ? '1px solid var(--accent-lost)' : '1px solid transparent', background: regType === 'lost' ? 'rgba(255, 74, 107, 0.15)' : 'rgba(255,255,255,0.03)' }}>
                             <input type="radio" checked={regType === 'lost'} onChange={() => setRegType('lost')} style={{ display: 'none' }} />
-                            <span>🔴 내가 분실한 물건</span>
+                            <span>{t('reg.radio_lost')}</span>
                           </label>
                           <label style={{ ...styles.typeOption, border: regType === 'found' ? '1px solid var(--accent-found)' : '1px solid transparent', background: regType === 'found' ? 'rgba(0, 242, 254, 0.15)' : 'rgba(255,255,255,0.03)' }}>
                             <input type="radio" checked={regType === 'found'} onChange={() => setRegType('found')} style={{ display: 'none' }} />
-                            <span>🔵 습득한 물건</span>
+                            <span>{t('reg.radio_found')}</span>
                           </label>
                         </div>
 
                         <div style={styles.inputGroup}>
-                          <label style={styles.formLabel}>물건명</label>
+                          <label style={styles.formLabel}>{t('reg.title_label')}</label>
                           <input
-                            type="text"
-                            placeholder="예: 에어팟 프로 2세대 본체"
-                            value={regTitle}
-                            onChange={(e) => setRegTitle(e.target.value)}
-                            className="glass-input"
-                            style={styles.formInput}
+                              type="text"
+                              placeholder={t('reg.title_placeholder')}
+                              value={regTitle}
+                              onChange={(e) => setRegTitle(e.target.value)}
+                              className="glass-input"
+                              style={styles.formInput}
                           />
                         </div>
 
                         <div style={styles.formRow}>
                           <div style={{ ...styles.inputGroup, flex: 1 }}>
-                            <label style={styles.formLabel}>카테고리</label>
+                            <label style={styles.formLabel}>{t('reg.category_label')}</label>
                             <select
                               value={regCategory}
                               onChange={(e) => setRegCategory(e.target.value)}
@@ -422,13 +436,13 @@ export default function BottomSheet({
                               style={styles.formInput}
                             >
                               {categories.slice(1).map(c => (
-                                <option key={c} value={c} style={{ background: '#0a0e1a' }}>{c}</option>
+                                <option key={c} value={c} style={{ background: '#0a0e1a' }}>{t(`category.${c}`)}</option>
                               ))}
                             </select>
                           </div>
 
                           <div style={{ ...styles.inputGroup, flex: 1 }}>
-                            <label style={styles.formLabel}>발생 시간</label>
+                            <label style={styles.formLabel}>{t('reg.time_label')}</label>
                             <input
                               type="datetime-local"
                               value={regOccurredAt}
@@ -440,10 +454,10 @@ export default function BottomSheet({
                         </div>
 
                         <div style={styles.inputGroup}>
-                          <label style={styles.formLabel}>상세 보관/분실 위치</label>
+                          <label style={styles.formLabel}>{t('reg.detail_loc_label')}</label>
                           <input
                             type="text"
-                            placeholder="예: 제2공학관 301동 4층 소파 위"
+                            placeholder={t('reg.detail_loc_placeholder')}
                             value={regDetailLoc}
                             onChange={(e) => setRegDetailLoc(e.target.value)}
                             className="glass-input"
@@ -452,9 +466,9 @@ export default function BottomSheet({
                         </div>
 
                         <div style={styles.inputGroup}>
-                          <label style={styles.formLabel}>특이사항 및 설명</label>
+                          <label style={styles.formLabel}>{t('reg.desc_label')}</label>
                           <textarea
-                            placeholder="물건의 생김새, 브랜드, 특징, 보관 여부를 적어주세요."
+                            placeholder={t('reg.desc_placeholder')}
                             value={regDesc}
                             onChange={(e) => setRegDesc(e.target.value)}
                             className="glass-input"
@@ -465,10 +479,10 @@ export default function BottomSheet({
 
                       <div style={styles.wizardButtons}>
                         <button type="button" className="glass-button" onClick={() => setRegStep(1)} style={{ flex: 1 }}>
-                          위치 재설정
+                          {t('reg.reset_coords')}
                         </button>
                         <button type="submit" className="glass-button primary" style={{ flex: 2 }}>
-                          등록 완료하기
+                          {t('reg.submit_btn')}
                         </button>
                       </div>
                     </form>
@@ -483,7 +497,7 @@ export default function BottomSheet({
                     {chatRooms.length === 0 ? (
                       <div style={styles.emptyState}>
                         <MessageSquare size={32} color="var(--text-muted)" />
-                        <p>활성화된 대화방이 없습니다.</p>
+                        <p>{t('chats.empty')}</p>
                       </div>
                     ) : (
                       chatRooms.map(room => (
@@ -495,14 +509,14 @@ export default function BottomSheet({
                         >
                           <div style={styles.chatInfo}>
                             <strong style={{ fontSize: '14px', color: 'var(--text-primary)' }}>
-                              {room.opponent?.nickname || '익명'} 님과의 대화
+                              {t('chats.with_user', { nickname: room.opponent?.nickname || '익명' })}
                             </strong>
                             <span style={styles.chatItemSub}>
-                              연동 물건: {room.item?.title || '유실물'}
+                              {t('chats.item_linked', { title: room.item?.title || '유실물' })}
                             </span>
                           </div>
                           <div style={styles.chatBadge}>
-                            {room.item?.type === 'lost' ? '🔴 분실' : '🔵 습득'}
+                            {room.item?.type === 'lost' ? `🔴 ${t('explore.badge_lost')}` : `🔵 ${t('explore.badge_found')}`}
                           </div>
                         </div>
                       ))
