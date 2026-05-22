@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Compass, LogOut, MessageCircle, MapPin, User, ShieldCheck } from 'lucide-react';
+import { Compass, LogOut, MapPin, User, ShieldCheck, Globe, ChevronDown } from 'lucide-react';
 import { Profile, Item, ChatRoom } from '../lib/types';
 import { db } from '../lib/supabase';
+import { useTranslation } from '../lib/LanguageContext';
 
 // Component imports
 import AuthModal from '../components/AuthModal';
@@ -13,6 +14,8 @@ import ChatPanel from '../components/ChatPanel';
 import RouteNavigator from '../components/RouteNavigator';
 
 export default function Home() {
+  const { t, language, setLanguage } = useTranslation();
+  
   // 1. Core States
   const [activeUser, setActiveUser] = useState<Profile | null>(null);
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({ lat: 37.459882, lng: 126.951905 });
@@ -25,7 +28,7 @@ export default function Home() {
   // 3. Registration Wizard States
   const [isRegistering, setIsRegistering] = useState(false);
   const [registrationCoords, setRegistrationCoords] = useState<{ lat: number; lng: number } | null>(null);
-  const [registrationAddress, setRegistrationAddress] = useState('지도를 클릭해 위치를 지정하세요');
+  const [registrationAddress, setRegistrationAddress] = useState(t('reg.tap_map_helper'));
 
   // 4. Chat Panel States
   const [activeChatRoomId, setActiveChatRoomId] = useState<string | null>(null);
@@ -33,6 +36,7 @@ export default function Home() {
   const [meetupSelectionMode, setMeetupSelectionMode] = useState(false);
   const [tempMeetupCoords, setTempMeetupCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [tempMeetupAddress, setTempMeetupAddress] = useState('');
+  const [showLangMenu, setShowLangMenu] = useState(false);
 
   // 5. Walking Route Navigation States
   const [navigationTarget, setNavigationTarget] = useState<{
@@ -40,6 +44,11 @@ export default function Home() {
     address: string;
   } | null>(null);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+
+  // Update document title when language changes
+  useEffect(() => {
+    document.title = t('app.title');
+  }, [language, t]);
 
   // Load User session & Initial Items on Mount
   useEffect(() => {
@@ -76,6 +85,7 @@ export default function Home() {
     setActiveChatRoomId(null);
     setNavigationTarget(null);
     setIsRegistering(false);
+    setRegistrationAddress(t('reg.tap_map_helper'));
   };
 
   // 6. Registration Callback
@@ -86,7 +96,7 @@ export default function Home() {
     setSelectedItem(createdItem);
     setIsRegistering(false);
     setRegistrationCoords(null);
-    setRegistrationAddress('지도를 클릭해 위치를 지정하세요');
+    setRegistrationAddress(t('reg.tap_map_helper'));
   };
 
   const handlePinSelect = (item: Item) => {
@@ -144,7 +154,7 @@ export default function Home() {
       db.sendChatMessage(
         activeChatRoomId,
         'system',
-        '🎉 [완료] 물건이 성공적으로 전달 및 수령 완료되었습니다!\n이용해 주셔서 대단히 감사합니다. 본 유실물 핀이 아카이빙 처리되었습니다.',
+        t('sys.completed'),
         true
       );
     }
@@ -167,6 +177,15 @@ export default function Home() {
     }
   };
 
+  const getLocalizedUniv = (univ: string) => {
+    if (univ === '서울대학교' || univ === 'Seoul National University' || univ === 'Đại học Quốc gia Seoul') return t('univ.snu');
+    if (univ === '카이스트 (KAIST)' || univ === 'KAIST') return t('univ.kaist');
+    if (univ === '고려대학교' || univ === 'Korea University' || univ === 'Đại học Korea') return t('univ.korea');
+    if (univ === '연세대학교' || univ === 'Yonsei University' || univ === 'Đại học Yonsei') return t('univ.yonsei');
+    if (univ === '캠퍼스 통합맵' || univ === 'Integrated Campus Map' || univ === 'Bản đồ Campus Liên kết') return t('univ.fallback');
+    return univ;
+  };
+
   return (
     <main style={styles.main}>
       {/* Dynamic Security Verification Portal (Auth Shield) */}
@@ -180,16 +199,57 @@ export default function Home() {
               <ShieldCheck size={18} color="var(--accent-found)" />
             </div>
             <div>
-              <h1 style={styles.bannerTitle}>{activeUser.university}</h1>
-              <span style={styles.bannerSubtitle}>안심 캠퍼스 맵</span>
+              <h1 style={styles.bannerTitle}>{getLocalizedUniv(activeUser.university)}</h1>
+              <span style={styles.bannerSubtitle}>{t('app.name')}</span>
             </div>
           </div>
           <div style={styles.bannerRight}>
             <div style={styles.profileBadge}>
               <User size={14} />
-              <span>{activeUser.nickname} 님</span>
+              <span>{t('common.hi', { nickname: activeUser.nickname })}</span>
             </div>
-            <button style={styles.logoutBtn} onClick={handleLogout} title="로그아웃">
+
+            {/* Language Selector Dropdown in Banner */}
+            <div style={styles.langSelectContainer}>
+              <button
+                style={styles.langSelectBtn}
+                onClick={() => setShowLangMenu(!showLangMenu)}
+                title="Language"
+              >
+                <Globe size={15} />
+                <span style={{ fontSize: '11px', fontWeight: '600' }}>
+                  {language === 'ko' ? 'KO' : language === 'en' ? 'EN' : 'VI'}
+                </span>
+                <ChevronDown size={11} />
+              </button>
+              {showLangMenu && (
+                <div style={styles.langDropdown} className="glass-panel">
+                  <button
+                    type="button"
+                    style={styles.langItem}
+                    onClick={() => { setLanguage('ko'); setShowLangMenu(false); }}
+                  >
+                    한국어
+                  </button>
+                  <button
+                    type="button"
+                    style={styles.langItem}
+                    onClick={() => { setLanguage('en'); setShowLangMenu(false); }}
+                  >
+                    English
+                  </button>
+                  <button
+                    type="button"
+                    style={styles.langItem}
+                    onClick={() => { setLanguage('vi'); setShowLangMenu(false); }}
+                  >
+                    Tiếng Việt
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <button style={styles.logoutBtn} onClick={handleLogout} title={t('common.logout')}>
               <LogOut size={16} />
             </button>
           </div>
@@ -212,13 +272,13 @@ export default function Home() {
       {meetupSelectionMode && (
         <div style={styles.meetupPrompt} className="glass-panel">
           <MapPin size={18} color="var(--accent-found)" className="pulse-indicator found" />
-          <span>지도를 탭하여 약속 장소(위치)를 지정하세요...</span>
+          <span>{t('map.meetup_prompt')}</span>
         </div>
       )}
 
       {/* Floating Centering GPS target */}
       {activeUser && !navigationTarget && (
-        <button style={styles.gpsFloatBtn} className="glass-panel" onClick={handlePanToUserLocation} title="내 위치로 이동">
+        <button style={styles.gpsFloatBtn} className="glass-panel" onClick={handlePanToUserLocation} title={t('map.gps_tooltip')}>
           <Compass size={22} color="var(--accent-found)" />
         </button>
       )}
@@ -299,7 +359,7 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: 'rgba(10, 14, 26, 0.75)',
     boxShadow: 'var(--box-shadow-glow)',
     width: 'calc(100% - 40px)',
-    maxWidth: '420px',
+    maxWidth: '460px',
   },
   bannerLeft: {
     display: 'flex',
@@ -344,6 +404,50 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '11px',
     color: 'var(--text-secondary)',
     border: '1px solid rgba(255, 255, 255, 0.05)',
+  },
+  langSelectContainer: {
+    position: 'relative',
+    zIndex: 1000,
+  },
+  langSelectBtn: {
+    background: 'transparent',
+    border: 'none',
+    cursor: 'pointer',
+    color: 'var(--text-secondary)',
+    padding: '6px 8px',
+    borderRadius: '8px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    border: '1px solid rgba(255, 255, 255, 0.05)',
+    transition: 'all 0.2s ease',
+  },
+  langDropdown: {
+    position: 'absolute',
+    top: '34px',
+    right: 0,
+    backgroundColor: 'rgba(10, 14, 26, 0.95)',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    borderRadius: '8px',
+    padding: '4px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '2px',
+    minWidth: '95px',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+  },
+  langItem: {
+    background: 'transparent',
+    border: 'none',
+    color: 'var(--text-secondary)',
+    padding: '6px 10px',
+    borderRadius: '6px',
+    fontSize: '11px',
+    textAlign: 'left',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    fontWeight: '500',
   },
   logoutBtn: {
     background: 'transparent',

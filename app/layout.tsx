@@ -1,6 +1,7 @@
 import './globals.css';
 import React from 'react';
 import Script from 'next/script';
+import { LanguageProvider } from '../lib/LanguageContext';
 
 export const metadata = {
   title: '안심 캠퍼스 맵 - 실시간 대학 유실물 매칭 & 안전 동선 안내 서비스',
@@ -25,7 +26,9 @@ export default function RootLayout({
         />
       </head>
       <body>
-        {children}
+        <LanguageProvider>
+          {children}
+        </LanguageProvider>
       </body>
     </html>
   );

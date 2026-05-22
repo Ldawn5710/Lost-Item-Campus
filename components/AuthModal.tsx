@@ -1,15 +1,17 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Mail, ShieldCheck, BookOpen, AlertCircle, ArrowRight, Check } from 'lucide-react';
+import { Mail, ShieldCheck, AlertCircle, ArrowRight, Check, Globe, ChevronDown } from 'lucide-react';
 import { Profile } from '../lib/types';
 import { db } from '../lib/supabase';
+import { useTranslation } from '../lib/LanguageContext';
 
 interface AuthModalProps {
   onAuthSuccess: (user: Profile, centerCoords: { lat: number; lng: number }) => void;
 }
 
 export default function AuthModal({ onAuthSuccess }: AuthModalProps) {
+  const { t, language, setLanguage } = useTranslation();
   const [email, setEmail] = useState('');
   const [nickname, setNickname] = useState('');
   const [step, setStep] = useState<1 | 2>(1);
@@ -17,20 +19,21 @@ export default function AuthModal({ onAuthSuccess }: AuthModalProps) {
   const [generatedOtp, setGeneratedOtp] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showLangMenu, setShowLangMenu] = useState(false);
 
   const getUniversityName = (emailStr: string): { name: string; lat: number; lng: number } => {
     const domain = emailStr.split('@')[1]?.toLowerCase() || '';
     if (domain.includes('snu.ac.kr')) {
-      return { name: '서울대학교', lat: 37.459882, lng: 126.951905 };
+      return { name: t('univ.snu'), lat: 37.459882, lng: 126.951905 };
     } else if (domain.includes('kaist.ac.kr')) {
-      return { name: '카이스트 (KAIST)', lat: 36.3721, lng: 127.3604 };
+      return { name: t('univ.kaist'), lat: 36.3721, lng: 127.3604 };
     } else if (domain.includes('korea.ac.kr')) {
-      return { name: '고려대학교', lat: 37.5894, lng: 127.0326 };
+      return { name: t('univ.korea'), lat: 37.5894, lng: 127.0326 };
     } else if (domain.includes('yonsei.ac.kr')) {
-      return { name: '연세대학교', lat: 37.5657, lng: 126.9385 };
+      return { name: t('univ.yonsei'), lat: 37.5657, lng: 126.9385 };
     }
-    // Default fallback (Seoul National University center)
-    return { name: '캠퍼스 통합맵', lat: 37.459882, lng: 126.951905 };
+    // Default fallback
+    return { name: t('univ.fallback'), lat: 37.459882, lng: 126.951905 };
   };
 
   const handleSendOtp = (e: React.FormEvent) => {
@@ -38,13 +41,13 @@ export default function AuthModal({ onAuthSuccess }: AuthModalProps) {
     setError('');
     
     if (!nickname.trim()) {
-      setError('닉네임을 입력해주세요.');
+      setError(t('auth.err_nickname'));
       return;
     }
 
     const domain = email.split('@')[1];
     if (!domain || (!domain.endsWith('.ac.kr') && !domain.endsWith('.edu'))) {
-      setError('대학 메일 주소(*.ac.kr 또는 *.edu)를 입력해 주세요.');
+      setError(t('auth.err_email'));
       return;
     }
 
@@ -58,7 +61,7 @@ export default function AuthModal({ onAuthSuccess }: AuthModalProps) {
       setLoading(false);
       
       // Auto-alerting the OTP in development environment for easy use!
-      alert(`[개발 테스트용] 인증 메일이 발송되었습니다.\n인증 코드: ${code}`);
+      alert(t('auth.dev_alert', { code }));
     }, 1200);
   };
 
@@ -67,7 +70,7 @@ export default function AuthModal({ onAuthSuccess }: AuthModalProps) {
     setError('');
 
     if (otp !== generatedOtp) {
-      setError('인증 번호가 일치하지 않습니다. 다시 확인해주세요.');
+      setError(t('auth.err_otp'));
       return;
     }
 
@@ -93,12 +96,50 @@ export default function AuthModal({ onAuthSuccess }: AuthModalProps) {
   return (
     <div style={styles.backdrop}>
       <div className="glass-panel" style={styles.modal}>
+        {/* Language Selector Dropdown */}
+        <div style={styles.langSelectContainer}>
+          <button
+            type="button"
+            style={styles.langSelectBtn}
+            onClick={() => setShowLangMenu(!showLangMenu)}
+          >
+            <Globe size={14} style={{ marginRight: '4px' }} />
+            <span>{language === 'ko' ? 'KO' : language === 'en' ? 'EN' : 'VI'}</span>
+            <ChevronDown size={12} style={{ marginLeft: '4px' }} />
+          </button>
+          {showLangMenu && (
+            <div style={styles.langDropdown} className="glass-panel">
+              <button
+                type="button"
+                style={styles.langItem}
+                onClick={() => { setLanguage('ko'); setShowLangMenu(false); }}
+              >
+                한국어
+              </button>
+              <button
+                type="button"
+                style={styles.langItem}
+                onClick={() => { setLanguage('en'); setShowLangMenu(false); }}
+              >
+                English
+              </button>
+              <button
+                type="button"
+                style={styles.langItem}
+                onClick={() => { setLanguage('vi'); setShowLangMenu(false); }}
+              >
+                Tiếng Việt
+              </button>
+            </div>
+          )}
+        </div>
+
         <div style={styles.header}>
           <div style={styles.logoContainer}>
             <ShieldCheck size={32} color="var(--accent-found)" />
           </div>
-          <h2 style={styles.title}>안심 캠퍼스 가입</h2>
-          <p style={styles.subtitle}>대학 구성원 전용 유실물 매칭 & 도보 안내 서비스</p>
+          <h2 style={styles.title}>{t('auth.title')}</h2>
+          <p style={styles.subtitle}>{t('auth.subtitle')}</p>
         </div>
 
         {error && (
@@ -111,11 +152,11 @@ export default function AuthModal({ onAuthSuccess }: AuthModalProps) {
         {step === 1 ? (
           <form onSubmit={handleSendOtp} style={styles.form}>
             <div style={styles.inputGroup}>
-              <label style={styles.label}>닉네임</label>
+              <label style={styles.label}>{t('auth.nickname')}</label>
               <div style={styles.inputWrapper}>
                 <input
                   type="text"
-                  placeholder="예: 길잃은아기사자"
+                  placeholder={t('auth.nickname_placeholder')}
                   value={nickname}
                   onChange={(e) => setNickname(e.target.value)}
                   className="glass-input"
@@ -126,12 +167,12 @@ export default function AuthModal({ onAuthSuccess }: AuthModalProps) {
             </div>
 
             <div style={styles.inputGroup}>
-              <label style={styles.label}>학교 이메일</label>
+              <label style={styles.label}>{t('auth.email')}</label>
               <div style={styles.inputWrapper}>
                 <Mail size={18} style={styles.inputIcon} />
                 <input
                   type="email"
-                  placeholder="your-email@univ.ac.kr"
+                  placeholder={t('auth.email_placeholder')}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="glass-input"
@@ -139,7 +180,7 @@ export default function AuthModal({ onAuthSuccess }: AuthModalProps) {
                   disabled={loading}
                 />
               </div>
-              <p style={styles.helperText}>* .ac.kr 또는 .edu 도메인의 이메일 주소만 지원합니다.</p>
+              <p style={styles.helperText}>{t('auth.email_helper')}</p>
             </div>
 
             <button
@@ -148,7 +189,7 @@ export default function AuthModal({ onAuthSuccess }: AuthModalProps) {
               style={styles.submitBtn}
               disabled={loading}
             >
-              {loading ? '인증 코드 발송 중...' : '인증번호 받기'}
+              {loading ? t('auth.sending_otp') : t('auth.get_otp')}
               {!loading && <ArrowRight size={18} style={{ marginLeft: '4px' }} />}
             </button>
           </form>
@@ -157,15 +198,15 @@ export default function AuthModal({ onAuthSuccess }: AuthModalProps) {
             <div style={styles.infoBanner}>
               <Mail size={16} color="var(--accent-found)" />
               <div style={styles.infoText}>
-                <strong>{email}</strong> 주소로<br />인증번호 6자리가 발송되었습니다.
+                {t('auth.otp_banner', { email })}
               </div>
             </div>
 
             <div style={styles.inputGroup}>
-              <label style={styles.label}>인증 코드 입력</label>
+              <label style={styles.label}>{t('auth.otp_label')}</label>
               <input
                 type="text"
-                placeholder="6자리 코드 입력"
+                placeholder={t('auth.otp_placeholder')}
                 maxLength={6}
                 value={otp}
                 onChange={(e) => setOtp(e.target.value)}
@@ -183,7 +224,7 @@ export default function AuthModal({ onAuthSuccess }: AuthModalProps) {
                 onClick={() => setStep(1)}
                 disabled={loading}
               >
-                이전으로
+                {t('auth.btn_back')}
               </button>
               <button
                 type="submit"
@@ -191,7 +232,7 @@ export default function AuthModal({ onAuthSuccess }: AuthModalProps) {
                 style={{ flex: 2 }}
                 disabled={loading}
               >
-                {loading ? '인증 중...' : '인증 완료하기'}
+                {loading ? t('auth.verifying') : t('auth.btn_verify')}
                 {!loading && <Check size={18} style={{ marginLeft: '4px' }} />}
               </button>
             </div>
@@ -223,6 +264,53 @@ const styles: Record<string, React.CSSProperties> = {
     flexDirection: 'column',
     gap: '24px',
     border: '1px solid rgba(255, 255, 255, 0.1)',
+    position: 'relative',
+  },
+  langSelectContainer: {
+    position: 'absolute',
+    top: '16px',
+    right: '16px',
+    zIndex: 10,
+  },
+  langSelectBtn: {
+    background: 'transparent',
+    border: 'none',
+    cursor: 'pointer',
+    color: 'var(--text-secondary)',
+    padding: '6px 10px',
+    borderRadius: '8px',
+    display: 'flex',
+    alignItems: 'center',
+    fontSize: '11px',
+    fontWeight: '600',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+  },
+  langDropdown: {
+    position: 'absolute',
+    top: '32px',
+    right: 0,
+    backgroundColor: 'rgba(10, 14, 26, 0.95)',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    borderRadius: '8px',
+    padding: '4px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '2px',
+    minWidth: '90px',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+  },
+  langItem: {
+    background: 'transparent',
+    border: 'none',
+    color: 'var(--text-secondary)',
+    padding: '6px 12px',
+    borderRadius: '6px',
+    fontSize: '11px',
+    textAlign: 'left',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    fontWeight: '500',
   },
   header: {
     textAlign: 'center',

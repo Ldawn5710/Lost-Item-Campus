@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Send, MapPin, ShieldAlert, ArrowLeft, Navigation, X } from 'lucide-react';
 import { ChatRoom, ChatMessage, Profile } from '../lib/types';
 import { db } from '../lib/supabase';
+import { useTranslation } from '../lib/LanguageContext';
 
 interface ChatPanelProps {
   roomId: string;
@@ -24,6 +25,7 @@ export default function ChatPanel({
   meetupAddress,
   onStartNavigation,
 }: ChatPanelProps) {
+  const { t } = useTranslation();
   const [room, setRoom] = useState<ChatRoom | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
@@ -59,13 +61,12 @@ export default function ChatPanel({
     // Since it's a simulated environment, having the other person reply immediately makes the app feel "real" and premium!
     setTimeout(() => {
       if (!room) return;
-      const opponentName = room.opponent?.nickname || '상대방';
       const replies = [
-        '안녕하세요! 물건 주워주셔서 정말 감사합니다 ㅠㅠ',
-        '혹시 지금 어디서 만날 수 있을까요? 제가 거기로 가겠습니다.',
-        '감사합니다! 학생회관 쪽에서 만나면 좋을 것 같아요.',
-        '도착하시면 말씀 부탁드려요!',
-        '우와 정말 다행이네요! 안전하게 만나서 받겠습니다.'
+        t('reply.1'),
+        t('reply.2'),
+        t('reply.3'),
+        t('reply.4'),
+        t('reply.5')
       ];
       const randomReply = replies[Math.floor(Math.random() * replies.length)];
       const autoReply = db.sendChatMessage(roomId, room.opponent?.id || 'opponent', randomReply);
@@ -81,7 +82,7 @@ export default function ChatPanel({
     db.updateChatRoomMeetup(roomId, meetupCoords.lat, meetupCoords.lng, meetupAddress);
     
     // Send system message
-    const msgText = `📍 만남의 장소가 지정되었습니다:\n"${meetupAddress}"\n아래 [동선 안내 시작] 버튼을 눌러 도보 길찾기를 진행하세요.`;
+    const msgText = t('sys.meetup_set', { meetupAddress });
     const systemMsg = db.sendChatMessage(roomId, 'system', msgText, true);
     
     setMessages(prev => [...prev, systemMsg]);
@@ -100,7 +101,7 @@ export default function ChatPanel({
           <ArrowLeft size={20} color="var(--text-primary)" />
         </button>
         <div style={styles.headerInfo}>
-          <strong style={{ fontSize: '15px' }}>{room.opponent?.nickname} 님</strong>
+          <strong style={{ fontSize: '15px' }}>{room.opponent?.nickname}{language === 'ko' ? ' 님' : ''}</strong>
           <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{room.opponent?.university}</span>
         </div>
       </div>
@@ -121,7 +122,7 @@ export default function ChatPanel({
             onClick={onSelectMeetupMode}
           >
             <MapPin size={14} />
-            <span>약속 장소 지정</span>
+            <span>{t('chat.meetup_btn')}</span>
           </button>
         </div>
       )}
@@ -131,7 +132,7 @@ export default function ChatPanel({
         <div style={styles.safetyAlert}>
           <ShieldAlert size={16} color="var(--accent-lost)" style={{ flexShrink: 0 }} />
           <div style={styles.safetyText}>
-            상호 예의를 지켜주세요. 대면 전달 시 가급적 학교 내 유동 인구가 많은 장소(예: 중앙도서관 로비, 학생회관 앞 등)를 적극 권장합니다.
+            {t('chat.safety_alert')}
           </div>
           <button style={styles.alertClose} onClick={() => setShowSafetyAlert(false)}>
             <X size={14} />
@@ -146,7 +147,7 @@ export default function ChatPanel({
           const isSys = msg.sender_id === 'system' || msg.is_system;
 
           if (isSys) {
-            const isMeetupMsg = msg.message.includes('만남의 장소가 지정되었습니다');
+            const isMeetupMsg = msg.message.startsWith('📍');
             return (
               <div key={msg.id} style={styles.systemMsgWrapper}>
                 <div style={styles.systemMsg} className="glass-panel">
@@ -158,11 +159,11 @@ export default function ChatPanel({
                       style={styles.systemNavBtn}
                       onClick={() => onStartNavigation(
                         { lat: room.meetup_lat!, lng: room.meetup_lng! },
-                        room.meetup_place || '지정된 장소'
+                        room.meetup_place || t('map.address_default')
                       )}
                     >
                       <Navigation size={14} />
-                      <span>동선 안내 시작</span>
+                      <span>{t('chat.start_nav')}</span>
                     </button>
                   )}
                 </div>
@@ -203,7 +204,7 @@ export default function ChatPanel({
       <form onSubmit={handleSendMessage} style={styles.inputBar}>
         <input
           type="text"
-          placeholder="메시지를 입력하세요..."
+          placeholder={t('chat.input_placeholder')}
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
           className="glass-input"
