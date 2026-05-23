@@ -70,21 +70,6 @@ export default function MapContainer({
     // Add Map controls
     const zoomControl = new window.kakao.maps.ZoomControl();
     map.addControl(zoomControl, window.kakao.maps.ControlPosition.RIGHT);
-
-    // If registering, listen for map clicks to move the registration pin
-    window.kakao.maps.event.addListener(map, 'click', (mouseEvent: any) => {
-      if (!isRegistering) return;
-      const latlng = mouseEvent.getLatLng();
-      const coords = { lat: latlng.getLat(), lng: latlng.getLng() };
-      reverseGeocode(coords);
-    });
-
-    return () => {
-      // Clean up event listeners
-      if (window.kakao && window.kakao.maps) {
-        window.kakao.maps.event.removeListener(map, 'click');
-      }
-    };
   }, [sdkLoaded]);
 
   // 3. Pan map when center prop changes
@@ -93,6 +78,29 @@ export default function MapContainer({
     const moveLatLng = new window.kakao.maps.LatLng(center.lat, center.lng);
     mapRef.current.panTo(moveLatLng);
   }, [center]);
+
+  // 4. Manage click listener with correct dependencies to avoid React stale closures
+  useEffect(() => {
+    if (!sdkLoaded || !mapRef.current) return;
+
+    const map = mapRef.current;
+    
+    const clickHandler = (mouseEvent: any) => {
+      if (!isRegistering) return;
+      const latlng = mouseEvent.latLng;
+      if (!latlng) return;
+      const coords = { lat: latlng.getLat(), lng: latlng.getLng() };
+      reverseGeocode(coords);
+    };
+
+    window.kakao.maps.event.addListener(map, 'click', clickHandler);
+
+    return () => {
+      if (window.kakao && window.kakao.maps) {
+        window.kakao.maps.event.removeListener(map, 'click', clickHandler);
+      }
+    };
+  }, [sdkLoaded, isRegistering, onRegistrationCoordsChange]);
 
   // 4. Reverse Geocoding via Kakao Local API or Mock simulator
   const reverseGeocode = (coords: { lat: number; lng: number }) => {
@@ -105,11 +113,11 @@ export default function MapContainer({
         if (status === window.kakao.maps.services.Status.OK) {
           addr = result[0].road_address?.address_name || result[0].address.address_name;
         } else {
-          // Fallback mockup names depending on location relative to SNU
-          if (coords.lat > 37.458 && coords.lat < 37.461 && coords.lng > 126.950 && coords.lng < 126.954) {
-            addr = '서울대학교 학생회관 중앙광장로';
-          } else if (coords.lat > 37.453 && coords.lat < 37.456) {
-            addr = '서울대학교 제2공학관 순환로';
+          // Fallback mockup names depending on location relative to Daegu University
+          if (coords.lat > 35.902 && coords.lat < 35.906 && coords.lng > 128.848 && coords.lng < 128.852) {
+            addr = '대구대학교 성산홀 본관 앞 광장';
+          } else if (coords.lat > 35.898 && coords.lat < 35.901) {
+            addr = '대구대학교 웅지관 앞 학생 광장';
           } else {
             addr = '캠퍼스 내 도보 구역';
           }
@@ -140,10 +148,10 @@ export default function MapContainer({
     if (regMarkerRef.current) {
       regMarkerRef.current.setPosition(regLatLng);
     } else {
-      // Create a glowing yellow pin for active registration
-      const imageSrc = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="%23facc15" stroke="%23ffffff" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4" fill="%23000000"/></svg>';
-      const imageSize = new window.kakao.maps.Size(36, 36);
-      const imageOption = { offset: new window.kakao.maps.Point(18, 18) };
+      // Create a premium glowing 50/50 split red-and-blue teardrop pin representing both lost and found coexisting
+      const imageSrc = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24"><defs><linearGradient id="splitGrad" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="50%" stop-color="%23ff4a6b"/><stop offset="50%" stop-color="%2300f2fe"/></linearGradient></defs><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="url(%23splitGrad)" stroke="%23ffffff" stroke-width="1.8"/><circle cx="12" cy="9" r="3.5" fill="%23ffffff" stroke="%230a0e1a" stroke-width="1"/></svg>';
+      const imageSize = new window.kakao.maps.Size(40, 40);
+      const imageOption = { offset: new window.kakao.maps.Point(20, 40) };
       const markerImage = new window.kakao.maps.MarkerImage(imageSrc, imageSize, imageOption);
 
       const marker = new window.kakao.maps.Marker({
@@ -178,7 +186,7 @@ export default function MapContainer({
       if (item.status === 'resolved') return;
 
       const itemLatLng = new window.kakao.maps.LatLng(item.latitude, item.longitude);
-      
+
       // Determine pin color based on item type and location
       let color = '%23ff4a6b'; // Red for lost
       if (item.title.includes('안심 보관소')) {
@@ -211,7 +219,7 @@ export default function MapContainer({
     });
   }, [items, sdkLoaded]);
 
-  // 7. Track User Live Location Marker
+  // 7. Track User Live Location Marker (Using high-fidelity CSS custom overlays for neon pulse ripple waves)
   useEffect(() => {
     if (!mapRef.current || !sdkLoaded) return;
 
@@ -228,19 +236,26 @@ export default function MapContainer({
     if (userLocationMarkerRef.current) {
       userLocationMarkerRef.current.setPosition(userLatLng);
     } else {
-      // Glow pulse neon cyan marker for user location
-      const imageSrc = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="%234f46e5" stroke="%2300f2fe" stroke-width="3.5"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5" fill="%23ffffff"/></svg>';
-      const imageSize = new window.kakao.maps.Size(28, 28);
-      const imageOption = { offset: new window.kakao.maps.Point(14, 14) };
-      const markerImage = new window.kakao.maps.MarkerImage(imageSrc, imageSize, imageOption);
+      // Create HTML node for the custom pulsing marker
+      const overlayContent = document.createElement('div');
+      overlayContent.className = 'user-gps-overlay';
+      overlayContent.innerHTML = `
+        <div class="user-gps-ripple"></div>
+        <div class="user-gps-ripple-outer"></div>
+        <div class="user-gps-core"></div>
+      `;
 
-      const marker = new window.kakao.maps.Marker({
+      // Create CustomOverlay
+      const overlay = new window.kakao.maps.CustomOverlay({
         position: userLatLng,
-        image: markerImage,
+        content: overlayContent,
+        xAnchor: 0.5,
+        yAnchor: 0.5,
+        zIndex: 1000
       });
 
-      marker.setMap(mapRef.current);
-      userLocationMarkerRef.current = marker;
+      overlay.setMap(mapRef.current);
+      userLocationMarkerRef.current = overlay;
     }
   }, [userLocation, sdkLoaded]);
 

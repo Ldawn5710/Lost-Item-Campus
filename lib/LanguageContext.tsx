@@ -54,7 +54,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   };
 
   // Localized categories helper
-  const categoryKeys = ['electronics', 'wallet', 'clothing', 'cosmetics', 'others'];
+  const categoryKeys = ['electronics', 'wallet', 'bag', 'clothing', 'cosmetics', 'others'];
   const categories = categoryKeys.map((key) => ({
     key,
     name: t(`category.${key}`),

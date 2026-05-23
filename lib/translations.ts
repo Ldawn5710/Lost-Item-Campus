@@ -34,6 +34,7 @@ export const translations: Record<Language, Record<string, string>> = {
     // Fallback univ
     'univ.fallback': '캠퍼스 통합맵',
     'univ.snu': '서울대학교',
+    'univ.daegu': '대구대학교',
     'univ.kaist': '카이스트 (KAIST)',
     'univ.korea': '고려대학교',
     'univ.yonsei': '연세대학교',
@@ -43,14 +44,14 @@ export const translations: Record<Language, Record<string, string>> = {
     'map.gps_tooltip': '내 위치로 이동',
     'map.loading': '카카오 지도 서비스 동기화 중...',
     'map.address_unspecified': '캠퍼스 내 미지정 구역',
-    'map.address_snu_center': '서울대학교 학생회관 중앙광장로',
-    'map.address_snu_eng': '서울대학교 제2공학관 순환로',
+    'map.address_daegu_center': '대구대학교 성산홀 본관 앞 광장',
+    'map.address_daegu_eng': '대구대학교 웅지관 앞 학생 광장',
     'map.address_fallback': '캠퍼스 내 도보 구역',
     'map.address_default': '캠퍼스 내 지정 구역',
 
     // BottomSheet - Tabs
     'tabs.explore': '지도로 탐색',
-    'tabs.register': '유실물 등록',
+    'tabs.register': '분실물/습득물 등록',
     'tabs.chats': '내 대화방 ({count})',
     'tabs.dashboard': '안심 캠퍼스 대시보드',
 
@@ -70,6 +71,8 @@ export const translations: Record<Language, Record<string, string>> = {
     'details.chat_btn': '실시간 1:1 대화로 물건 찾기',
     'details.safebox_notice': '* 본 보관소는 학교 소속 부서입니다. 상세 위치를 방문하시어 본인 인증 후 수령 가능합니다.',
     'details.mypost_notice': '✓ 회원님이 등록하신 게시글입니다.',
+    'details.delete_btn': '게시글 삭제하기',
+    'details.delete_confirm': '정말 이 게시글을 삭제하시겠습니까?',
     'details.matching_recommend': '[매칭 추천] 유사한 습득물이 발견되었습니다!',
     'details.matching_view': '해당 습득물 확인하기',
 
@@ -127,6 +130,7 @@ export const translations: Record<Language, Record<string, string>> = {
     // Categories
     'category.electronics': '전자기기',
     'category.wallet': '지갑/카드',
+    'category.bag': '가방',
     'category.clothing': '의류',
     'category.cosmetics': '화장품',
     'category.others': '기타',
@@ -179,6 +183,7 @@ export const translations: Record<Language, Record<string, string>> = {
     // Fallback univ
     'univ.fallback': 'Integrated Campus Map',
     'univ.snu': 'Seoul National University',
+    'univ.daegu': 'Daegu University',
     'univ.kaist': 'KAIST',
     'univ.korea': 'Korea University',
     'univ.yonsei': 'Yonsei University',
@@ -188,14 +193,14 @@ export const translations: Record<Language, Record<string, string>> = {
     'map.gps_tooltip': 'Move to my location',
     'map.loading': 'Syncing Kakao Map...',
     'map.address_unspecified': 'Unspecified area on campus',
-    'map.address_snu_center': 'SNU Student Center Square Walkway',
-    'map.address_snu_eng': 'SNU Engineering Building 2 Loop Road',
+    'map.address_daegu_center': 'Daegu Univ Seongsan Hall Square',
+    'map.address_daegu_eng': 'Daegu Univ Woongji Hall Plaza',
     'map.address_fallback': 'Walking path on campus',
     'map.address_default': 'Designated area on campus',
 
     // BottomSheet - Tabs
     'tabs.explore': 'Explore Map',
-    'tabs.register': 'Register Item',
+    'tabs.register': 'Report Lost/Found',
     'tabs.chats': 'My Chats ({count})',
     'tabs.dashboard': 'Safe Campus Dashboard',
 
@@ -215,6 +220,8 @@ export const translations: Record<Language, Record<string, string>> = {
     'details.chat_btn': 'Start 1:1 Chat to Find Item',
     'details.safebox_notice': '* This storage box is an official university facility. Please visit in person with verification to claim.',
     'details.mypost_notice': '✓ This is your post.',
+    'details.delete_btn': 'Delete Post',
+    'details.delete_confirm': 'Are you sure you want to delete this post?',
     'details.matching_recommend': '[Matching Recommendation] A similar item was found!',
     'details.matching_view': 'Check similar item',
 
@@ -272,6 +279,7 @@ export const translations: Record<Language, Record<string, string>> = {
     // Categories
     'category.electronics': 'Electronics',
     'category.wallet': 'Wallet/Card',
+    'category.bag': 'Bag',
     'category.clothing': 'Clothing',
     'category.cosmetics': 'Cosmetics',
     'category.others': 'Others',
@@ -324,6 +332,7 @@ export const translations: Record<Language, Record<string, string>> = {
     // Fallback univ
     'univ.fallback': 'Bản đồ Campus Liên kết',
     'univ.snu': 'Đại học Quốc gia Seoul',
+    'univ.daegu': 'Đại học Daegu',
     'univ.kaist': 'KAIST',
     'univ.korea': 'Đại học Korea',
     'univ.yonsei': 'Đại học Yonsei',
@@ -333,14 +342,14 @@ export const translations: Record<Language, Record<string, string>> = {
     'map.gps_tooltip': 'Di chuyển đến vị trí của tôi',
     'map.loading': 'Đang đồng bộ bản đồ Kakao...',
     'map.address_unspecified': 'Khu vực chưa xác định trong campus',
-    'map.address_snu_center': 'Đường đi bộ Quảng trường Nhà văn hóa SNU',
-    'map.address_snu_eng': 'Đường vòng Tòa nhà Kỹ thuật 2 SNU',
+    'map.address_daegu_center': 'Quảng trường Tòa nhà Seongsan Đại học Daegu',
+    'map.address_daegu_eng': 'Quảng trường Tòa nhà Woongji Đại học Daegu',
     'map.address_fallback': 'Lối đi bộ trong campus',
     'map.address_default': 'Khu vực đã chọn trong campus',
 
     // BottomSheet - Tabs
     'tabs.explore': 'Khám phá Bản đồ',
-    'tabs.register': 'Đăng ký đồ mất',
+    'tabs.register': 'Đăng ký Đồ mất/Đồ nhặt',
     'tabs.chats': 'Hộp thoại ({count})',
     'tabs.dashboard': 'Bảng điều khiển',
 
@@ -360,6 +369,8 @@ export const translations: Record<Language, Record<string, string>> = {
     'details.chat_btn': 'Trò chuyện 1:1 để nhận lại đồ',
     'details.safebox_notice': '* Tủ bảo quản này là cơ sở chính thức của trường. Vui lòng mang giấy tờ xác minh đến nhận trực tiếp.',
     'details.mypost_notice': '✓ Đây là bài đăng của bạn.',
+    'details.delete_btn': 'Xóa bài viết',
+    'details.delete_confirm': 'Bạn có chắc chắn muốn xóa bài viết này?',
     'details.matching_recommend': '[Gợi ý đối chiếu] Tìm thấy một đồ vật tương tự!',
     'details.matching_view': 'Xem đồ vật tương tự',
 
@@ -417,6 +428,7 @@ export const translations: Record<Language, Record<string, string>> = {
     // Categories
     'category.electronics': 'Thiết bị điện tử',
     'category.wallet': 'Ví/Thẻ',
+    'category.bag': 'Túi xách/Bao lô',
     'category.clothing': 'Quần áo',
     'category.cosmetics': 'Mỹ phẩm',
     'category.others': 'Khác',

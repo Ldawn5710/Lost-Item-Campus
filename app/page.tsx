@@ -15,10 +15,10 @@ import RouteNavigator from '../components/RouteNavigator';
 
 export default function Home() {
   const { t, language, setLanguage } = useTranslation();
-  
+
   // 1. Core States
   const [activeUser, setActiveUser] = useState<Profile | null>(null);
-  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({ lat: 37.459882, lng: 126.951905 });
+  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({ lat: 35.9038, lng: 128.8504 });
   const [items, setItems] = useState<Item[]>([]);
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
 
@@ -69,12 +69,12 @@ export default function Home() {
 
   const handleAuthSuccess = (user: Profile, coords?: { lat: number; lng: number }) => {
     setActiveUser(user);
-    
+
     // Centering coordinates
-    const center = coords || { lat: 37.459882, lng: 126.951905 };
+    const center = coords || { lat: 35.9038, lng: 128.8504 };
     setMapCenter(center);
     setUserLocation(center);
-    
+
     syncDatabaseState(user.id);
   };
 
@@ -130,7 +130,7 @@ export default function Home() {
   // 8. Chat Room Activation
   const handleStartChat = (item: Item) => {
     if (!activeUser) return;
-    
+
     // Create or locate chat room
     const room = db.createChatRoom(item.id, activeUser.id, item.user_id);
     syncDatabaseState(activeUser.id);
@@ -148,7 +148,7 @@ export default function Home() {
     if (selectedItem) {
       db.updateItemStatus(selectedItem.id, 'resolved');
     }
-    
+
     // Send auto system finish message to the active chat
     if (activeChatRoomId) {
       db.sendChatMessage(
@@ -161,6 +161,12 @@ export default function Home() {
 
     syncDatabaseState(activeUser?.id || 'anonymous');
     setNavigationTarget(null);
+    setSelectedItem(null);
+  };
+
+  const handleDeleteItem = (itemId: string) => {
+    db.deleteItem(itemId);
+    syncDatabaseState(activeUser?.id || 'anonymous');
     setSelectedItem(null);
   };
 
@@ -178,6 +184,7 @@ export default function Home() {
   };
 
   const getLocalizedUniv = (univ: string) => {
+    if (univ === '대구대학교' || univ === 'Daegu University' || univ === 'Đại học Daegu') return t('univ.daegu');
     if (univ === '서울대학교' || univ === 'Seoul National University' || univ === 'Đại học Quốc gia Seoul') return t('univ.snu');
     if (univ === '카이스트 (KAIST)' || univ === 'KAIST') return t('univ.kaist');
     if (univ === '고려대학교' || univ === 'Korea University' || univ === 'Đại học Korea') return t('univ.korea');
@@ -276,6 +283,14 @@ export default function Home() {
         </div>
       )}
 
+      {/* Registration Location Pinned prompt (PRD UX enhancement) */}
+      {isRegistering && !registrationCoords && (
+        <div style={styles.meetupPrompt} className="glass-panel">
+          <MapPin size={18} color="var(--accent-lost)" className="pulse-indicator lost" />
+          <span>지도를 클릭하여 분실/습득 위치를 지정해주세요.</span>
+        </div>
+      )}
+
       {/* Floating Centering GPS target */}
       {activeUser && !navigationTarget && (
         <button style={styles.gpsFloatBtn} className="glass-panel" onClick={handlePanToUserLocation} title={t('map.gps_tooltip')}>
@@ -303,6 +318,7 @@ export default function Home() {
           selectedItem={selectedItem}
           onSelectItem={setSelectedItem}
           onRegisterItem={handleRegisterItem}
+          onDeleteItem={handleDeleteItem}
           isRegistering={isRegistering}
           setIsRegistering={setIsRegistering}
           registrationCoords={registrationCoords}

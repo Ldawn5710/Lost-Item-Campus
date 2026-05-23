@@ -239,3 +239,61 @@ body {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
+
+/* User GPS Pulse Overlay Styles */
+.user-gps-overlay {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.user-gps-core {
+  width: 14px;
+  height: 14px;
+  background: #ffffff;
+  border: 3.5px solid #a855f7; /* Royal Purple */
+  border-radius: 50%;
+  box-shadow: 0 0 12px #a855f7, 0 0 4px rgba(255, 255, 255, 0.8);
+  z-index: 3;
+}
+
+.user-gps-ripple {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  border: 2px solid rgba(168, 85, 247, 0.6);
+  border-radius: 50%;
+  background: rgba(168, 85, 247, 0.1);
+  animation: gpsRipple 2s cubic-bezier(0.1, 0.8, 0.3, 1) infinite;
+  z-index: 2;
+}
+
+.user-gps-ripple-outer {
+  position: absolute;
+  width: 44px;
+  height: 44px;
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  border-radius: 50%;
+  background: rgba(168, 85, 247, 0.03);
+  animation: gpsRipple 2s cubic-bezier(0.1, 0.8, 0.3, 1) infinite;
+  animation-delay: 0.6s;
+  z-index: 1;
+}
+
+@keyframes gpsRipple {
+  0% {
+    transform: scale(0.3);
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+}
