@@ -8,7 +8,7 @@ const isSupabaseConfigured = SUPABASE_URL !== '' && SUPABASE_ANON_KEY !== '';
 // In-Memory & LocalStorage State Machine for seamless local execution
 class SimulatedDatabase {
   private profilesKey = 'safe_campus_profiles';
-  private itemsKey = 'safe_campus_items';
+  private itemsKey = 'safe_campus_items_v3';
   private chatRoomsKey = 'safe_campus_chat_rooms';
   private chatMessagesKey = 'safe_campus_chat_messages';
   private activeUserKey = 'safe_campus_active_user';
@@ -23,10 +23,10 @@ class SimulatedDatabase {
     // 1. Initial Profile
     if (!localStorage.getItem(this.activeUserKey)) {
       const defaultUser: Profile = {
-        id: 'user-snu-student-123',
-        email: 'hong@snu.ac.kr',
+        id: 'user-daegu-student-123',
+        email: 'hong@daegu.ac.kr',
         nickname: '캠퍼스지킴이',
-        university: '서울대학교',
+        university: '대구대학교',
         is_verified: true,
         created_at: new Date().toISOString(),
       };
@@ -36,90 +36,8 @@ class SimulatedDatabase {
       localStorage.setItem(this.profilesKey, JSON.stringify(profiles));
     }
 
-    // 2. Pre-populated Campus Items (Centered around SNU for illustration)
     if (!localStorage.getItem(this.itemsKey)) {
-      const defaultItems: Item[] = [
-        {
-          id: 'item-lost-1',
-          user_id: 'user-snu-student-abc',
-          type: 'lost',
-          title: '아이패드 프로 11인치 스페이스 그레이',
-          category: 'electronics',
-          description: '301동 3층 302호 자습실에서 두고 나왔습니다. 키보드 폴리오 케이스가 끼워져 있고, 뒷면에 라이언 스티커가 붙어 있습니다. 중요한 과제 파일이 있어서 꼭 찾고 싶습니다 ㅜㅜ',
-          image_url: '',
-          latitude: 37.454950,
-          longitude: 126.952540,
-          location_detail: '제2공학관 301동 3층 302호 강의실 맨 뒷자리',
-          status: 'searching',
-          occurred_at: new Date(Date.now() - 4 * 3600000).toISOString(), // 4 hours ago
-          created_at: new Date(Date.now() - 4 * 3600000).toISOString(),
-          updated_at: new Date(Date.now() - 4 * 3600000).toISOString(),
-        },
-        {
-          id: 'item-found-1',
-          user_id: 'user-snu-student-xyz',
-          type: 'found',
-          title: '검은색 카드지갑 (현금 포함)',
-          category: 'wallet',
-          description: '학생회관 앞 벤치 옆 잔디밭에서 발견했습니다. 신한카드랑 학생증(이*우) 들어있고, 현금 만원짜리 한 장 들어있습니다. 습득 후 현재 보관중입니다.',
-          image_url: '',
-          latitude: 37.459380,
-          longitude: 126.953120,
-          location_detail: '학생회관 앞 해동학술관 근처 야외 목재 벤치 밑',
-          status: 'kept',
-          occurred_at: new Date(Date.now() - 12 * 3600000).toISOString(), // 12 hours ago
-          created_at: new Date(Date.now() - 12 * 3600000).toISOString(),
-          updated_at: new Date(Date.now() - 12 * 3600000).toISOString(),
-        },
-        {
-          id: 'item-safe-1',
-          user_id: 'admin-snu-box',
-          type: 'found', // Safe Box acts as an active found container
-          title: '🔴 안심 보관소 - 학생회관 통합 경비실',
-          category: 'others',
-          description: '학생회관 1층 메인 복도 안쪽에 위치한 공식 행정/안심 수령소입니다. 야간 이동 및 허위 매칭이 불안할 시 이곳에 보관을 요청하시거나 수령 장소로 약속을 적극 권장합니다. (운영시간: 09:00 ~ 22:00)',
-          image_url: '',
-          latitude: 37.459200,
-          longitude: 126.952200,
-          location_detail: '학생회관 1층 중앙 입구 앞 행정초소',
-          status: 'kept',
-          occurred_at: new Date().toISOString(),
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-        {
-          id: 'item-safe-2',
-          user_id: 'admin-snu-box',
-          type: 'found',
-          title: '🔴 안심 보관소 - 인문관 경비데스크',
-          category: 'others',
-          description: '인문대 해동관 1층 입구 안내데스크입니다. 습득물 보관 대장이 비치되어 있어 안전하게 전달 및 대리 수령이 가능합니다.',
-          image_url: '',
-          latitude: 37.460950,
-          longitude: 126.952800,
-          location_detail: '인문대학 14동 1층 로비 출입구 데스크',
-          status: 'kept',
-          occurred_at: new Date().toISOString(),
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-        {
-          id: 'item-lost-2',
-          user_id: 'user-snu-student-def',
-          type: 'lost',
-          title: '노란색 캐릭터 열쇠고리 키링',
-          category: 'others',
-          description: '관악사 삼거리 길 가다가 흘린 것 같습니다. 노란색 곰돌이 인형 키링이고 에어팟에 달아놓은 것입니다. 소중한 선물이라 꼭 찾고 싶어요.',
-          image_url: '',
-          latitude: 37.463200,
-          longitude: 126.957500,
-          location_detail: '관악사 기숙사 삼거리 인도 구역',
-          status: 'searching',
-          occurred_at: new Date(Date.now() - 24 * 3600000).toISOString(),
-          created_at: new Date(Date.now() - 24 * 3600000).toISOString(),
-          updated_at: new Date(Date.now() - 24 * 3600000).toISOString(),
-        }
-      ];
+      const defaultItems: Item[] = [];
       localStorage.setItem(this.itemsKey, JSON.stringify(defaultItems));
     }
   }
@@ -180,6 +98,28 @@ class SimulatedDatabase {
     return null;
   }
 
+  deleteItem(itemId: string): boolean {
+    const items = this.getItems();
+    const filtered = items.filter(i => i.id !== itemId);
+    if (filtered.length !== items.length) {
+      localStorage.setItem(this.itemsKey, JSON.stringify(filtered));
+      
+      // Clean up linked chat rooms & messages
+      const rooms: ChatRoom[] = JSON.parse(localStorage.getItem(this.chatRoomsKey) || '[]');
+      const filteredRooms = rooms.filter(r => r.item_id !== itemId);
+      localStorage.setItem(this.chatRoomsKey, JSON.stringify(filteredRooms));
+      
+      const deletedRoomIds = rooms.filter(r => r.item_id === itemId).map(r => r.id);
+      if (deletedRoomIds.length > 0) {
+        const messages: ChatMessage[] = JSON.parse(localStorage.getItem(this.chatMessagesKey) || '[]');
+        const filteredMessages = messages.filter(m => !deletedRoomIds.includes(m.room_id));
+        localStorage.setItem(this.chatMessagesKey, JSON.stringify(filteredMessages));
+      }
+      return true;
+    }
+    return false;
+  }
+
   // Chat Rooms and Messages
   getChatRooms(userId: string): ChatRoom[] {
     if (typeof window === 'undefined') return [];
@@ -199,7 +139,7 @@ class SimulatedDatabase {
             id: opponentId,
             email: 'user@ac.kr',
             nickname: '익명 대학생',
-            university: item ? '서울대학교' : '캠퍼스',
+            university: item ? '대구대학교' : '캠퍼스',
             is_verified: true,
             created_at: new Date().toISOString()
           };

@@ -11,6 +11,7 @@ interface BottomSheetProps {
   selectedItem: Item | null;
   onSelectItem: (item: Item | null) => void;
   onRegisterItem: (item: Omit<Item, 'id' | 'created_at' | 'updated_at'>) => void;
+  onDeleteItem?: (itemId: string) => void;
   isRegistering: boolean;
   setIsRegistering: (val: boolean) => void;
   registrationCoords: { lat: number; lng: number } | null;
@@ -28,6 +29,7 @@ export default function BottomSheet({
   selectedItem,
   onSelectItem,
   onRegisterItem,
+  onDeleteItem,
   isRegistering,
   setIsRegistering,
   registrationCoords,
@@ -54,7 +56,7 @@ export default function BottomSheet({
   const [regDesc, setRegDesc] = useState('');
   const [regOccurredAt, setRegOccurredAt] = useState(new Date().toISOString().substring(0, 16));
 
-  const categories = ['all', 'electronics', 'wallet', 'clothing', 'cosmetics', 'others'];
+  const categories = ['all', 'electronics', 'wallet', 'bag', 'clothing', 'cosmetics', 'others'];
 
   const getLocaleString = (dateStr: string) => {
     const localeMap = { ko: 'ko-KR', en: 'en-US', vi: 'vi-VN' };
@@ -248,8 +250,37 @@ export default function BottomSheet({
                     {t('details.safebox_notice')}
                   </div>
                 ) : (
-                  <div style={styles.myPostNotice}>
-                    {t('details.mypost_notice')}
+                  <div style={{ display: 'flex', flexDirection: 'column', width: '100%', gap: '10px', alignItems: 'center' }}>
+                    <div style={styles.myPostNotice}>
+                      {t('details.mypost_notice')}
+                    </div>
+                    <button
+                      className="glass-button"
+                      style={{
+                        width: '100%',
+                        backgroundColor: 'rgba(255, 74, 107, 0.1)',
+                        border: '1px solid rgba(255, 74, 107, 0.3)',
+                        color: 'var(--accent-lost)',
+                        fontSize: '13px',
+                        fontWeight: '600',
+                        padding: '8px 16px',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        transition: 'all 0.2s ease',
+                      }}
+                      onClick={() => {
+                        if (confirm(t('details.delete_confirm'))) {
+                          onDeleteItem?.(selectedItem.id);
+                        }
+                      }}
+                    >
+                      <PlusCircle size={16} style={{ transform: 'rotate(45deg)' }} />
+                      <span>{t('details.delete_btn')}</span>
+                    </button>
                   </div>
                 )}
               </div>

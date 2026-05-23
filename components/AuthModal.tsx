@@ -23,7 +23,9 @@ export default function AuthModal({ onAuthSuccess }: AuthModalProps) {
 
   const getUniversityName = (emailStr: string): { name: string; lat: number; lng: number } => {
     const domain = emailStr.split('@')[1]?.toLowerCase() || '';
-    if (domain.includes('snu.ac.kr')) {
+    if (domain.includes('daegu.ac.kr')) {
+      return { name: t('univ.daegu'), lat: 35.9038, lng: 128.8504 };
+    } else if (domain.includes('snu.ac.kr')) {
       return { name: t('univ.snu'), lat: 37.459882, lng: 126.951905 };
     } else if (domain.includes('kaist.ac.kr')) {
       return { name: t('univ.kaist'), lat: 36.3721, lng: 127.3604 };
@@ -33,7 +35,7 @@ export default function AuthModal({ onAuthSuccess }: AuthModalProps) {
       return { name: t('univ.yonsei'), lat: 37.5657, lng: 126.9385 };
     }
     // Default fallback
-    return { name: t('univ.fallback'), lat: 37.459882, lng: 126.951905 };
+    return { name: t('univ.fallback'), lat: 35.9038, lng: 128.8504 };
   };
 
   const handleSendOtp = (e: React.FormEvent) => {
