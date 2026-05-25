@@ -473,75 +473,33 @@ export default function BottomSheet({
                     <div style={styles.myPostNotice}>
                       {t('details.mypost_notice')}
                     </div>
-                    <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
-                      {selectedItem.type === 'found' && onStartNavigation ? (
-                        <>
-                          <button
-                            className="glass-button primary"
-                            style={{ flex: 1, gap: '6px', padding: '8px 12px' }}
-                            onClick={() => onStartNavigation({ lat: selectedItem.latitude, lng: selectedItem.longitude }, selectedItem.location_detail || selectedItem.title)}
-                          >
-                            <MapPin size={16} />
-                            <span>등록 위치 길찾기</span>
-                          </button>
-                          <button
-                            className="glass-button"
-                            style={{
-                              flex: 1,
-                              backgroundColor: 'rgba(255, 74, 107, 0.1)',
-                              border: '1px solid rgba(255, 74, 107, 0.3)',
-                              color: 'var(--accent-lost)',
-                              fontSize: '13px',
-                              fontWeight: '600',
-                              padding: '8px 12px',
-                              borderRadius: '8px',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: '6px',
-                              transition: 'all 0.2s ease',
-                            }}
-                            onClick={() => {
-                              if (confirm(t('details.delete_confirm'))) {
-                                onDeleteItem?.(selectedItem.id);
-                              }
-                            }}
-                          >
-                            <PlusCircle size={16} style={{ transform: 'rotate(45deg)' }} />
-                            <span>{t('details.delete_btn')}</span>
-                          </button>
-                        </>
-                      ) : (
-                        <button
-                          className="glass-button"
-                          style={{
-                            width: '100%',
-                            backgroundColor: 'rgba(255, 74, 107, 0.1)',
-                            border: '1px solid rgba(255, 74, 107, 0.3)',
-                            color: 'var(--accent-lost)',
-                            fontSize: '13px',
-                            fontWeight: '600',
-                            padding: '8px 16px',
-                            borderRadius: '8px',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '6px',
-                            transition: 'all 0.2s ease',
-                          }}
-                          onClick={() => {
-                            if (confirm(t('details.delete_confirm'))) {
-                              onDeleteItem?.(selectedItem.id);
-                            }
-                          }}
-                        >
-                          <PlusCircle size={16} style={{ transform: 'rotate(45deg)' }} />
-                          <span>{t('details.delete_btn')}</span>
-                        </button>
-                      )}
-                    </div>
+                    <button
+                      className="glass-button"
+                      style={{
+                        width: '100%',
+                        backgroundColor: 'rgba(255, 74, 107, 0.1)',
+                        border: '1px solid rgba(255, 74, 107, 0.3)',
+                        color: 'var(--accent-lost)',
+                        fontSize: '13px',
+                        fontWeight: '600',
+                        padding: '8px 16px',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        transition: 'all 0.2s ease',
+                      }}
+                      onClick={() => {
+                        if (confirm(t('details.delete_confirm'))) {
+                          onDeleteItem?.(selectedItem.id);
+                        }
+                      }}
+                    >
+                      <PlusCircle size={16} style={{ transform: 'rotate(45deg)' }} />
+                      <span>{t('details.delete_btn')}</span>
+                    </button>
                   </div>
                 )}
               </div>
