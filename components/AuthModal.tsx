@@ -276,7 +276,6 @@ const styles: Record<string, React.CSSProperties> = {
   },
   langSelectBtn: {
     background: 'transparent',
-    border: 'none',
     cursor: 'pointer',
     color: 'var(--text-secondary)',
     padding: '6px 10px',
@@ -384,6 +383,7 @@ const styles: Record<string, React.CSSProperties> = {
   input: {
     width: '100%',
     backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    color: '#ffffff',
   },
   helperText: {
     fontSize: '11px',

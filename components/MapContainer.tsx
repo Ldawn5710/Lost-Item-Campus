@@ -84,7 +84,7 @@ export default function MapContainer({
     if (!sdkLoaded || !mapRef.current) return;
 
     const map = mapRef.current;
-    
+
     const clickHandler = (mouseEvent: any) => {
       if (!isRegistering) return;
       const latlng = mouseEvent.latLng;
@@ -148,10 +148,23 @@ export default function MapContainer({
     if (regMarkerRef.current) {
       regMarkerRef.current.setPosition(regLatLng);
     } else {
-      // Create a premium glowing 50/50 split red-and-blue teardrop pin representing both lost and found coexisting
-      const imageSrc = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24"><defs><linearGradient id="splitGrad" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="50%" stop-color="%23ff4a6b"/><stop offset="50%" stop-color="%2300f2fe"/></linearGradient></defs><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="url(%23splitGrad)" stroke="%23ffffff" stroke-width="1.8"/><circle cx="12" cy="9" r="3.5" fill="%23ffffff" stroke="%230a0e1a" stroke-width="1"/></svg>';
-      const imageSize = new window.kakao.maps.Size(40, 40);
-      const imageOption = { offset: new window.kakao.maps.Point(20, 40) };
+      // Create a premium glowing smooth holographic teardrop pin representing both lost and found coexisting
+      const imageSrc = 'data:image/svg+xml;utf8,' +
+        '<svg xmlns="http://www.w3.org/2000/svg" width="36" height="42" viewBox="0 0 36 42">' +
+        '<defs>' +
+        '<linearGradient id="hologramGrad" x1="0%" y1="0%" x2="100%" y2="100%">' +
+        '<stop offset="0%" stop-color="%23ff4a6b"/>' +
+        '<stop offset="50%" stop-color="%238b5cf6"/>' +
+        '<stop offset="100%" stop-color="%2300f2fe"/>' +
+        '</linearGradient>' +
+        '</defs>' +
+        '<ellipse cx="18" cy="39" rx="6" ry="1.5" fill="%23000000" opacity="0.4"/>' +
+        '<path d="M18 41C18 41 32 25 32 15C32 7.3 25.7 1 18 1S4 7.3 4 15C4 25 18 41 18 41Z" fill="url(%23hologramGrad)" stroke="%23ffffff" stroke-width="1.8"/>' +
+        '<circle cx="18" cy="15" r="5" fill="%23ffffff"/>' +
+        '<circle cx="18" cy="15" r="2.5" fill="%238b5cf6"/>' +
+        '</svg>';
+      const imageSize = new window.kakao.maps.Size(36, 42);
+      const imageOption = { offset: new window.kakao.maps.Point(18, 41) };
       const markerImage = new window.kakao.maps.MarkerImage(imageSrc, imageSize, imageOption);
 
       const marker = new window.kakao.maps.Marker({
@@ -188,19 +201,44 @@ export default function MapContainer({
       const itemLatLng = new window.kakao.maps.LatLng(item.latitude, item.longitude);
 
       // Determine pin color based on item type and location
-      let color = '%23ff4a6b'; // Red for lost
+      let typeKey = 'lost';
+      let colStart = '%23ff6b8b';
+      let colEnd = '%23d91b43';
+      let innerCol = '%23d91b43';
+
       if (item.title.includes('안심 보관소')) {
-        color = '%2305f3a2'; // Green for safe boxes
+        typeKey = 'safebox';
+        colStart = '%2305f3a2';
+        colEnd = '%2300a86b';
+        innerCol = '%2300a86b';
       } else if (item.type === 'found') {
-        color = '%2300f2fe'; // Blue for found
+        typeKey = 'found';
+        colStart = '%2300f2fe';
+        colEnd = '%230072ff';
+        innerCol = '%230072ff';
       } else if (item.status === 'matching') {
-        color = '%239ca3af'; // Gray for matching/resolved
+        typeKey = 'matching';
+        colStart = '%23d1d5db';
+        colEnd = '%236b7280';
+        innerCol = '%236b7280';
       }
 
-      // Create high-fidelity SVG Pin
-      const imageSrc = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="${color}" stroke="%23ffffff" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.5" fill="%23ffffff"/></svg>`;
-      const imageSize = new window.kakao.maps.Size(30, 30);
-      const imageOption = { offset: new window.kakao.maps.Point(15, 15) };
+      // Create a premium glowing dot marker for registered items
+      const imageSrc = 'data:image/svg+xml;utf8,' +
+        '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">' +
+        '<defs>' +
+        `<radialGradient id="halo-${typeKey}" cx="50%" cy="50%" r="50%">` +
+        `<stop offset="0%" stop-color="${colStart}" stop-opacity="0.6"/>` +
+        `<stop offset="100%" stop-color="${colEnd}" stop-opacity="0"/>` +
+        '</radialGradient>' +
+        '</defs>' +
+        `<circle cx="16" cy="16" r="15" fill="url(%23halo-${typeKey})"/>` +
+        `<circle cx="16" cy="16" r="7.5" fill="${colStart}" stroke="%23ffffff" stroke-width="2"/>` +
+        '<circle cx="16" cy="16" r="2.2" fill="%23ffffff"/>' +
+        '</svg>';
+
+      const imageSize = new window.kakao.maps.Size(32, 32);
+      const imageOption = { offset: new window.kakao.maps.Point(16, 16) };
       const markerImage = new window.kakao.maps.MarkerImage(imageSrc, imageSize, imageOption);
 
       const marker = new window.kakao.maps.Marker({
@@ -271,43 +309,39 @@ export default function MapContainer({
 
     if (!activeRoute) return;
 
-    const startLatLng = new window.kakao.maps.LatLng(activeRoute.start.lat, activeRoute.start.lng);
-    const endLatLng = new window.kakao.maps.LatLng(activeRoute.end.lat, activeRoute.end.lng);
+    const drawRoute = async () => {
+      let points: any[] = [];
+      try {
+        // Fetch real road-based vehicle directions from secure backend proxy
+        points = await fetchRoadRouteFromMyServer(activeRoute.start, activeRoute.end);
+      } catch (err) {
+        console.warn("Falling back to campus pavements Dijkstra graph pathfinding...", err);
+        // Clean fallback to campus walkway Dijkstra graph pathfinder
+        points = findShortestPath(activeRoute.start, activeRoute.end);
+      }
 
-    // Premium walking path routing simulation. Instead of drawing a straight diagonal line,
-    // we interpolate nodes that trace along major walkways (making it look authentic and safety-first!)
-    const points: any[] = [];
-    points.push(startLatLng);
+      if (!mapRef.current) return;
 
-    // Add intermediate nodes to make the polyline wrap around buildings beautifully
-    const latDiff = activeRoute.end.lat - activeRoute.start.lat;
-    const lngDiff = activeRoute.end.lng - activeRoute.start.lng;
+      const polyline = new window.kakao.maps.Polyline({
+        path: points,
+        strokeWeight: 6,
+        strokeColor: '#00f2fe',
+        strokeOpacity: 0.9,
+        strokeStyle: 'solid',
+      });
 
-    // Draw a neat L-shaped or stair-shaped campus walking path
-    const node1 = new window.kakao.maps.LatLng(activeRoute.start.lat + latDiff * 0.4, activeRoute.start.lng + lngDiff * 0.1);
-    const node2 = new window.kakao.maps.LatLng(activeRoute.start.lat + latDiff * 0.7, activeRoute.start.lng + lngDiff * 0.8);
-    points.push(node1);
-    points.push(node2);
-    points.push(endLatLng);
+      polyline.setMap(mapRef.current);
+      routePolylineRef.current = polyline;
 
-    const polyline = new window.kakao.maps.Polyline({
-      path: points,
-      strokeWeight: 6,
-      strokeColor: '#00f2fe',
-      strokeOpacity: 0.9,
-      strokeStyle: 'solid',
-    });
+      // Fit map bounds to show both starting point and destination beautifully
+      const bounds = new window.kakao.maps.LatLngBounds();
+      points.forEach(pt => {
+        bounds.extend(pt);
+      });
+      mapRef.current.setBounds(bounds);
+    };
 
-    polyline.setMap(mapRef.current);
-    routePolylineRef.current = polyline;
-
-    // Fit map bounds to show both starting point and destination beautifully
-    const bounds = new window.kakao.maps.LatLngBounds();
-    bounds.extend(startLatLng);
-    bounds.extend(node1);
-    bounds.extend(node2);
-    bounds.extend(endLatLng);
-    mapRef.current.setBounds(bounds);
+    drawRoute();
 
   }, [activeRoute, sdkLoaded]);
 
@@ -324,6 +358,224 @@ export default function MapContainer({
     </div>
   );
 }
+
+interface WalkNode {
+  id: string;
+  lat: number;
+  lng: number;
+}
+
+// Highly Detailed Campus Pedestrian Graph Network for Daegu University
+const CAMPUS_WALKWAY_NODES: WalkNode[] = [
+  { id: 'n_seongsan_north', lat: 35.9048, lng: 128.8512 }, // Seongsan Hall North (Wallet lost site)
+  { id: 'n_seongsan_center', lat: 35.9042, lng: 128.8506 }, // Seongsan Hall Central Square Walkway
+  { id: 'n_seongsan_west', lat: 35.9040, lng: 128.8492 }, // Seongsan Hall West Plaza Walkway
+  { id: 'n_seongsan_east', lat: 35.9044, lng: 128.8522 }, // Seongsan Hall East Driveway Sidewalk
+  { id: 'n_seongsan_crosswalk', lat: 35.9035, lng: 128.8501 }, // Crosswalk & Signal in front of Seongsan Hall
+  { id: 'n_central_lawn_west', lat: 35.9028, lng: 128.8488 }, // Central Lawn West Sidewalk
+  { id: 'n_central_lawn_east', lat: 35.9029, lng: 128.8508 }, // Central Lawn East Sidewalk
+  { id: 'n_main_walkway_west', lat: 35.9032, lng: 128.8488 }, // Main Walkway West Intersection
+  { id: 'n_woongji_entrance', lat: 35.9018, lng: 128.8492 }, // Woongji Hall Entrance (AirPods found site)
+  { id: 'n_woongji_square', lat: 35.9022, lng: 128.8496 }, // Student Square in front of Woongji Hall
+  { id: 'n_woongji_west', lat: 35.9015, lng: 128.8480 }, // Woongji Hall West Road
+  { id: 'n_woongji_east', lat: 35.9016, lng: 128.8505 }, // Woongji Hall East Sidewalk
+  { id: 'n_minwon_center', lat: 35.9028, lng: 128.8475 }, // Front of General Services Center (Safe Box)
+  { id: 'n_student_center', lat: 35.9025, lng: 128.8483 }, // Student Center East Walkway
+  { id: 'n_central_junction', lat: 35.9028, lng: 128.8499 }, // Central Campus Lawn Junction
+  { id: 'n_east_sidewalk', lat: 35.9038, lng: 128.8518 }, // East Sidewalk
+  { id: 'n_lib_entrance', lat: 35.9030, lng: 128.8510 }, // Central Library Entrance Sidewalk
+];
+
+const CAMPUS_WALKWAY_EDGES = [
+  { u: 'n_seongsan_north', v: 'n_seongsan_center' },
+  { u: 'n_seongsan_north', v: 'n_seongsan_west' },
+  { u: 'n_seongsan_north', v: 'n_seongsan_east' },
+  { u: 'n_seongsan_center', v: 'n_seongsan_crosswalk' },
+  { u: 'n_seongsan_center', v: 'n_east_sidewalk' },
+  { u: 'n_seongsan_center', v: 'n_seongsan_west' },
+  { u: 'n_seongsan_center', v: 'n_seongsan_east' },
+  { u: 'n_seongsan_center', v: 'n_central_lawn_east' },
+  { u: 'n_seongsan_west', v: 'n_main_walkway_west' },
+  { u: 'n_seongsan_west', v: 'n_central_lawn_west' },
+  { u: 'n_seongsan_crosswalk', v: 'n_central_junction' },
+  { u: 'n_seongsan_crosswalk', v: 'n_main_walkway_west' },
+  { u: 'n_seongsan_crosswalk', v: 'n_central_lawn_west' },
+  { u: 'n_seongsan_crosswalk', v: 'n_central_lawn_east' },
+  { u: 'n_central_lawn_west', v: 'n_main_walkway_west' },
+  { u: 'n_central_lawn_west', v: 'n_student_center' },
+  { u: 'n_central_lawn_east', v: 'n_central_junction' },
+  { u: 'n_central_lawn_east', v: 'n_lib_entrance' },
+  { u: 'n_main_walkway_west', v: 'n_minwon_center' },
+  { u: 'n_main_walkway_west', v: 'n_student_center' },
+  { u: 'n_minwon_center', v: 'n_student_center' },
+  { u: 'n_minwon_center', v: 'n_woongji_west' },
+  { u: 'n_student_center', v: 'n_woongji_entrance' },
+  { u: 'n_central_junction', v: 'n_woongji_square' },
+  { u: 'n_central_junction', v: 'n_lib_entrance' },
+  { u: 'n_lib_entrance', v: 'n_east_sidewalk' },
+  { u: 'n_lib_entrance', v: 'n_woongji_east' },
+  { u: 'n_woongji_square', v: 'n_woongji_entrance' },
+  { u: 'n_woongji_square', v: 'n_student_center' },
+  { u: 'n_woongji_west', v: 'n_woongji_entrance' },
+  { u: 'n_woongji_east', v: 'n_woongji_entrance' },
+];
+
+const getDistance = (lat1: number, lng1: number, lat2: number, lng2: number) => {
+  const dLat = lat1 - lat2;
+  const dLng = lng1 - lng2;
+  return Math.sqrt(dLat * dLat + dLng * dLng);
+};
+
+// Generates an orthogonal L-shaped path (axial lines) from point A to B
+// This ensures that the line wraps around rectangular campus buildings and yards
+// rather than slicing diagonally through building walls or open green lawns.
+const getAxialPoints = (from: { lat: number; lng: number }, to: { lat: number; lng: number }) => {
+  // Move horizontally first (longitude), then vertically (latitude)
+  const midPoint = new window.kakao.maps.LatLng(from.lat, to.lng);
+  return [
+    new window.kakao.maps.LatLng(from.lat, from.lng),
+    midPoint,
+    new window.kakao.maps.LatLng(to.lat, to.lng)
+  ];
+};
+
+const findShortestPath = (start: { lat: number; lng: number }, end: { lat: number; lng: number }) => {
+  // 1. Find the closest nodes in the graph to start and end
+  let closestStartNode = CAMPUS_WALKWAY_NODES[0];
+  let minStartDist = Infinity;
+  let closestEndNode = CAMPUS_WALKWAY_NODES[0];
+  let minEndDist = Infinity;
+
+  CAMPUS_WALKWAY_NODES.forEach(node => {
+    const dS = getDistance(start.lat, start.lng, node.lat, node.lng);
+    if (dS < minStartDist) {
+      minStartDist = dS;
+      closestStartNode = node;
+    }
+    const dE = getDistance(end.lat, end.lng, node.lat, node.lng);
+    if (dE < minEndDist) {
+      minEndDist = dE;
+      closestEndNode = node;
+    }
+  });
+
+  // 2. Build adjacency list
+  const adj: Record<string, { node: string; dist: number }[]> = {};
+  CAMPUS_WALKWAY_NODES.forEach(n => { adj[n.id] = []; });
+  CAMPUS_WALKWAY_EDGES.forEach(({ u, v }) => {
+    const nodeU = CAMPUS_WALKWAY_NODES.find(n => n.id === u)!;
+    const nodeV = CAMPUS_WALKWAY_NODES.find(n => n.id === v)!;
+    const dist = getDistance(nodeU.lat, nodeU.lng, nodeV.lat, nodeV.lng);
+    adj[u].push({ node: v, dist });
+    adj[v].push({ node: u, dist });
+  });
+
+  // 3. Dijkstra's Algorithm
+  const distances: Record<string, number> = {};
+  const previous: Record<string, string | null> = {};
+  const queue: string[] = [];
+
+  CAMPUS_WALKWAY_NODES.forEach(node => {
+    distances[node.id] = Infinity;
+    previous[node.id] = null;
+    queue.push(node.id);
+  });
+  distances[closestStartNode.id] = 0;
+
+  while (queue.length > 0) {
+    queue.sort((a, b) => distances[a] - distances[b]);
+    const u = queue.shift()!;
+
+    if (u === closestEndNode.id) break;
+    if (distances[u] === Infinity) break;
+
+    adj[u].forEach(neighbor => {
+      const alt = distances[u] + neighbor.dist;
+      if (alt < distances[neighbor.node]) {
+        distances[neighbor.node] = alt;
+        previous[neighbor.node] = u;
+      }
+    });
+  }
+
+  // 4. Reconstruct path
+  const pathNodes: WalkNode[] = [];
+  let curr: string | null = closestEndNode.id;
+  while (curr !== null) {
+    const node = CAMPUS_WALKWAY_NODES.find(n => n.id === curr)!;
+    pathNodes.unshift(node);
+    curr = previous[curr];
+  }
+
+  // Fallback if path is empty/not found
+  if (pathNodes.length === 0 || distances[closestEndNode.id] === Infinity) {
+    const points: any[] = [];
+    points.push(...getAxialPoints(start, end));
+    return points;
+  }
+
+  // 5. Build final array of Kakao LatLng points
+  const points: any[] = [];
+  
+  // Snap from start point to the closest walkway node using L-shaped axial paths to avoid building clipping
+  const startToNode = getAxialPoints(start, closestStartNode);
+  points.push(...startToNode);
+  
+  // Add intermediate graph nodes representing sidewalks/pavements
+  for (let i = 1; i < pathNodes.length - 1; i++) {
+    points.push(new window.kakao.maps.LatLng(pathNodes[i].lat, pathNodes[i].lng));
+  }
+
+  // Snap from the final walkway node to the destination using L-shaped axial paths
+  if (pathNodes.length > 1) {
+    const nodeToEnd = getAxialPoints(closestEndNode, end);
+    // Avoid double pushing the closestEndNode by slicing the start
+    points.push(...nodeToEnd.slice(1));
+  } else {
+    // If it's a 1-node path, the startToNode already handles connecting to closestStartNode.
+    // We just draw the axial connection from closestStartNode to end.
+    const nodeToEnd = getAxialPoints(closestStartNode, end);
+    points.push(...nodeToEnd.slice(1));
+  }
+
+  return points;
+};
+
+const fetchRoadRouteFromMyServer = async (start: { lat: number; lng: number }, end: { lat: number; lng: number }) => {
+  const originStr = `${start.lng},${start.lat}`;
+  const destinationStr = `${end.lng},${end.lat}`;
+  
+  const url = `/api/directions?origin=${originStr}&destination=${destinationStr}`;
+
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Server route request failed with status: ${response.status}`);
+  }
+  
+  const data = await response.json();
+  
+  if (data.routes && data.routes[0].result_code !== 0) {
+    throw new Error(`Kakao Mobility routing error: ${data.routes[0].result_msg}`);
+  }
+
+  const route = data.routes[0];
+  const path: any[] = [];
+
+  route.sections.forEach((section: any) => {
+    section.roads.forEach((road: any) => {
+      const vertexes = road.vertexes;
+      for (let i = 0; i < vertexes.length; i += 2) {
+        path.push(new window.kakao.maps.LatLng(vertexes[i + 1], vertexes[i]));
+      }
+    });
+  });
+
+  if (path.length === 0) {
+    throw new Error("No road coordinates found in the response.");
+  }
+
+  return path;
+};
 
 const styles: Record<string, React.CSSProperties> = {
   container: {

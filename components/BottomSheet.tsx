@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Search, Filter, PlusCircle, MessageSquare, MapPin, Calendar, Tag, FileText, ArrowRight, CheckCircle2, ChevronUp, ChevronDown } from 'lucide-react';
 import { Item, ItemType, ItemStatus, Profile } from '../lib/types';
 import { useTranslation } from '../lib/LanguageContext';
@@ -21,6 +21,7 @@ interface BottomSheetProps {
   setActiveTab: (tab: 'explore' | 'register' | 'chats') => void;
   onSelectChat: (roomId: string) => void;
   chatRooms: any[];
+  onStartNavigation?: (coords: { lat: number; lng: number }, address: string) => void;
 }
 
 export default function BottomSheet({
@@ -39,6 +40,7 @@ export default function BottomSheet({
   setActiveTab,
   onSelectChat,
   chatRooms,
+  onStartNavigation,
 }: BottomSheetProps) {
   const { t, language } = useTranslation();
   const [isOpen, setIsOpen] = useState(true);
@@ -55,6 +57,34 @@ export default function BottomSheet({
   const [regDetailLoc, setRegDetailLoc] = useState('');
   const [regDesc, setRegDesc] = useState('');
   const [regOccurredAt, setRegOccurredAt] = useState(new Date().toISOString().substring(0, 16));
+
+  // Premium Photo capturing & Canvas compression states
+  const [regImage, setRegImage] = useState('');
+  const [cameraActive, setCameraActive] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
+  // Clean up camera on tab change or drawer close
+  useEffect(() => {
+    return () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (activeTab !== 'register' || !isRegistering) {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+      }
+      setCameraActive(false);
+    }
+  }, [activeTab, isRegistering]);
 
   const categories = ['all', 'electronics', 'wallet', 'bag', 'clothing', 'cosmetics', 'others'];
 
@@ -129,6 +159,104 @@ export default function BottomSheet({
     setRegStep(2);
   };
 
+  // 1. Camera streams & Canvas Compression Logic
+  const startCamera = async () => {
+    setCameraActive(true);
+    setCameraError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment' },
+        audio: false
+      });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+      streamRef.current = stream;
+    } catch (err: any) {
+      console.error("Camera access error:", err);
+      setCameraError(t('reg.camera_err'));
+      setCameraActive(false);
+    }
+  };
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    setCameraActive(false);
+  };
+
+  const capturePhoto = () => {
+    if (!videoRef.current) return;
+    const video = videoRef.current;
+    const canvas = document.createElement('canvas');
+    const width = video.videoWidth || 640;
+    const height = video.videoHeight || 480;
+    canvas.width = width;
+    canvas.height = height;
+
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.drawImage(video, 0, 0, width, height);
+      // Resize to max 800px to avoid localStorage overflow
+      const max_width = 800;
+      let targetWidth = width;
+      let targetHeight = height;
+      if (width > max_width) {
+        targetHeight = Math.round((height * max_width) / width);
+        targetWidth = max_width;
+      }
+      
+      const resizeCanvas = document.createElement('canvas');
+      resizeCanvas.width = targetWidth;
+      resizeCanvas.height = targetHeight;
+      const resizeCtx = resizeCanvas.getContext('2d');
+      if (resizeCtx) {
+        resizeCtx.drawImage(canvas, 0, 0, targetWidth, targetHeight);
+        const dataUrl = resizeCanvas.toDataURL('image/jpeg', 0.6);
+        setRegImage(dataUrl);
+      } else {
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+        setRegImage(dataUrl);
+      }
+    }
+    stopCamera();
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const max_width = 800;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > max_width) {
+          height = Math.round((height * max_width) / width);
+          width = max_width;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+          setRegImage(dataUrl);
+        }
+      };
+      img.src = reader.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSubmitRegister = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -145,7 +273,7 @@ export default function BottomSheet({
       title: regTitle,
       category: regCategory,
       description: regDesc,
-      image_url: '',
+      image_url: regImage,
       latitude: registrationCoords.lat,
       longitude: registrationCoords.lng,
       location_detail: regDetailLoc || registrationAddress,
@@ -157,6 +285,7 @@ export default function BottomSheet({
     setRegTitle('');
     setRegDetailLoc('');
     setRegDesc('');
+    setRegImage('');
     setIsRegistering(false);
     setRegStep(1);
     setActiveTab('explore');
@@ -196,7 +325,13 @@ export default function BottomSheet({
 
               <div style={styles.detailsScroll}>
                 <h3 style={styles.itemTitle}>{selectedItem.title}</h3>
-                
+
+                {selectedItem.image_url && (
+                  <div style={styles.detailsImageWrapper}>
+                    <img src={selectedItem.image_url} alt={selectedItem.title} style={styles.detailsImage} />
+                  </div>
+                )}
+
                 <div style={styles.metaRow}>
                   <div style={styles.metaItem}><Tag size={14} /> <span>{t(`category.${selectedItem.category}`)}</span></div>
                   <div style={styles.metaItem}><Calendar size={14} /> <span>{getLocaleString(selectedItem.occurred_at)}</span></div>
@@ -234,53 +369,130 @@ export default function BottomSheet({
                 )}
               </div>
 
-              {/* Chat trigger */}
+              {/* Chat & Navigation Trigger */}
               <div style={styles.detailsFooter}>
                 {selectedItem.user_id !== activeUser?.id && !selectedItem.title.includes('안심 보관소') ? (
-                  <button
-                    className="glass-button primary"
-                    style={{ width: '100%', gap: '8px' }}
-                    onClick={() => onStartChat(selectedItem)}
-                  >
-                    <MessageSquare size={18} />
-                    <span>{t('details.chat_btn')}</span>
-                  </button>
+                  <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
+                    {selectedItem.type === 'found' && onStartNavigation ? (
+                      <>
+                        <button
+                          className="glass-button"
+                          style={{ flex: 1, gap: '6px', backgroundColor: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', color: 'var(--text-primary)', padding: '8px 12px' }}
+                          onClick={() => onStartChat(selectedItem)}
+                        >
+                          <MessageSquare size={16} />
+                          <span>{t('details.chat_btn')}</span>
+                        </button>
+                        <button
+                          className="glass-button primary"
+                          style={{ flex: 1, gap: '6px', padding: '8px 12px' }}
+                          onClick={() => onStartNavigation({ lat: selectedItem.latitude, lng: selectedItem.longitude }, selectedItem.location_detail || selectedItem.title)}
+                        >
+                          <MapPin size={16} />
+                          <span>길찾기</span>
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        className="glass-button primary"
+                        style={{ width: '100%', gap: '8px' }}
+                        onClick={() => onStartChat(selectedItem)}
+                      >
+                        <MessageSquare size={18} />
+                        <span>{t('details.chat_btn')}</span>
+                      </button>
+                    )}
+                  </div>
                 ) : selectedItem.title.includes('안심 보관소') ? (
-                  <div style={styles.safeBoxNotice}>
-                    {t('details.safebox_notice')}
+                  <div style={{ display: 'flex', flexDirection: 'column', width: '100%', gap: '10px', alignItems: 'center' }}>
+                    <div style={styles.safeBoxNotice}>
+                      {t('details.safebox_notice')}
+                    </div>
+                    {onStartNavigation && (
+                      <button
+                        className="glass-button primary"
+                        style={{ width: '100%', gap: '6px', padding: '8px 16px' }}
+                        onClick={() => onStartNavigation({ lat: selectedItem.latitude, lng: selectedItem.longitude }, selectedItem.location_detail || selectedItem.title)}
+                      >
+                        <MapPin size={16} />
+                        <span>보관소 길찾기</span>
+                      </button>
+                    )}
                   </div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', width: '100%', gap: '10px', alignItems: 'center' }}>
                     <div style={styles.myPostNotice}>
                       {t('details.mypost_notice')}
                     </div>
-                    <button
-                      className="glass-button"
-                      style={{
-                        width: '100%',
-                        backgroundColor: 'rgba(255, 74, 107, 0.1)',
-                        border: '1px solid rgba(255, 74, 107, 0.3)',
-                        color: 'var(--accent-lost)',
-                        fontSize: '13px',
-                        fontWeight: '600',
-                        padding: '8px 16px',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '6px',
-                        transition: 'all 0.2s ease',
-                      }}
-                      onClick={() => {
-                        if (confirm(t('details.delete_confirm'))) {
-                          onDeleteItem?.(selectedItem.id);
-                        }
-                      }}
-                    >
-                      <PlusCircle size={16} style={{ transform: 'rotate(45deg)' }} />
-                      <span>{t('details.delete_btn')}</span>
-                    </button>
+                    <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
+                      {selectedItem.type === 'found' && onStartNavigation ? (
+                        <>
+                          <button
+                            className="glass-button primary"
+                            style={{ flex: 1, gap: '6px', padding: '8px 12px' }}
+                            onClick={() => onStartNavigation({ lat: selectedItem.latitude, lng: selectedItem.longitude }, selectedItem.location_detail || selectedItem.title)}
+                          >
+                            <MapPin size={16} />
+                            <span>등록 위치 길찾기</span>
+                          </button>
+                          <button
+                            className="glass-button"
+                            style={{
+                              flex: 1,
+                              backgroundColor: 'rgba(255, 74, 107, 0.1)',
+                              border: '1px solid rgba(255, 74, 107, 0.3)',
+                              color: 'var(--accent-lost)',
+                              fontSize: '13px',
+                              fontWeight: '600',
+                              padding: '8px 12px',
+                              borderRadius: '8px',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '6px',
+                              transition: 'all 0.2s ease',
+                            }}
+                            onClick={() => {
+                              if (confirm(t('details.delete_confirm'))) {
+                                onDeleteItem?.(selectedItem.id);
+                              }
+                            }}
+                          >
+                            <PlusCircle size={16} style={{ transform: 'rotate(45deg)' }} />
+                            <span>{t('details.delete_btn')}</span>
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          className="glass-button"
+                          style={{
+                            width: '100%',
+                            backgroundColor: 'rgba(255, 74, 107, 0.1)',
+                            border: '1px solid rgba(255, 74, 107, 0.3)',
+                            color: 'var(--accent-lost)',
+                            fontSize: '13px',
+                            fontWeight: '600',
+                            padding: '8px 16px',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '6px',
+                            transition: 'all 0.2s ease',
+                          }}
+                          onClick={() => {
+                            if (confirm(t('details.delete_confirm'))) {
+                              onDeleteItem?.(selectedItem.id);
+                            }
+                          }}
+                        >
+                          <PlusCircle size={16} style={{ transform: 'rotate(45deg)' }} />
+                          <span>{t('details.delete_btn')}</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -381,22 +593,29 @@ export default function BottomSheet({
                           className="glass-panel"
                           onClick={() => onSelectItem(item)}
                         >
-                          <div style={styles.itemHeader}>
-                            <span style={{
-                              ...styles.badgeSmall,
-                              backgroundColor: item.type === 'lost' ? 'rgba(255, 74, 107, 0.15)' : 'rgba(0, 242, 254, 0.15)',
-                              color: item.type === 'lost' ? 'var(--accent-lost)' : 'var(--accent-found)'
-                            }}>
-                              {item.type === 'lost' ? t('explore.badge_lost') : t('explore.badge_found')}
-                            </span>
-                            <span style={styles.itemTime}>
-                              {getLocaleDateString(item.occurred_at)}
-                            </span>
-                          </div>
-                          <h4 style={styles.listTitle}>{item.title}</h4>
-                          <div style={styles.listLoc}>
-                            <MapPin size={12} />
-                            <span>{item.location_detail}</span>
+                          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                            {item.image_url && (
+                              <img src={item.image_url} alt="" style={styles.listThumbnail} />
+                            )}
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={styles.itemHeader}>
+                                <span style={{
+                                  ...styles.badgeSmall,
+                                  backgroundColor: item.type === 'lost' ? 'rgba(255, 74, 107, 0.15)' : 'rgba(0, 242, 254, 0.15)',
+                                  color: item.type === 'lost' ? 'var(--accent-lost)' : 'var(--accent-found)'
+                                }}>
+                                  {item.type === 'lost' ? t('explore.badge_lost') : t('explore.badge_found')}
+                                </span>
+                                <span style={styles.itemTime}>
+                                  {getLocaleDateString(item.occurred_at)}
+                                </span>
+                              </div>
+                              <h4 style={{ ...styles.listTitle, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{item.title}</h4>
+                              <div style={styles.listLoc}>
+                                <MapPin size={12} />
+                                <span style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{item.location_detail}</span>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       ))
@@ -415,7 +634,7 @@ export default function BottomSheet({
                         <h3>{t('reg.step1_title')}</h3>
                         <p>{t('reg.step1_guide')}</p>
                       </div>
-                      
+
                       <div style={styles.coordDisplay} className="glass-panel">
                         <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{t('reg.selected_address')}</span>
                         <strong style={{ fontSize: '14px', marginTop: '4px' }}>
@@ -448,12 +667,12 @@ export default function BottomSheet({
                         <div style={styles.inputGroup}>
                           <label style={styles.formLabel}>{t('reg.title_label')}</label>
                           <input
-                              type="text"
-                              placeholder={t('reg.title_placeholder')}
-                              value={regTitle}
-                              onChange={(e) => setRegTitle(e.target.value)}
-                              className="glass-input"
-                              style={styles.formInput}
+                            type="text"
+                            placeholder={t('reg.title_placeholder')}
+                            value={regTitle}
+                            onChange={(e) => setRegTitle(e.target.value)}
+                            className="glass-input"
+                            style={styles.formInput}
                           />
                         </div>
 
@@ -505,6 +724,44 @@ export default function BottomSheet({
                             className="glass-input"
                             style={{ ...styles.formInput, height: '64px', resize: 'none' }}
                           />
+                        </div>
+
+                        {/* Premium Live Camera & File Upload Integration Section */}
+                        <div style={styles.inputGroup}>
+                          <label style={styles.formLabel}>{t('reg.image_label')}</label>
+                          <div style={styles.cameraContainer}>
+                            {cameraActive ? (
+                              <div style={styles.videoWrapper}>
+                                <video ref={videoRef} autoPlay playsInline style={styles.videoStream} />
+                                <div style={styles.videoControls}>
+                                  <button type="button" onClick={capturePhoto} style={styles.captureBtn}>
+                                    {t('reg.camera_snap')}
+                                  </button>
+                                  <button type="button" onClick={stopCamera} style={styles.stopCameraBtn}>
+                                    {t('reg.camera_stop')}
+                                  </button>
+                                </div>
+                              </div>
+                            ) : regImage ? (
+                              <div style={styles.imagePreviewContainer}>
+                                <img src={regImage} alt="Preview" style={styles.imagePreview} />
+                                <button type="button" onClick={() => setRegImage('')} style={styles.deleteImageBtn}>
+                                  ✕
+                                </button>
+                              </div>
+                            ) : (
+                              <div style={styles.cameraPlaceholder}>
+                                <button type="button" onClick={startCamera} style={styles.cameraBtn}>
+                                  {t('reg.camera_start')}
+                                </button>
+                                <label style={styles.fileUploadLabel}>
+                                  <input type="file" accept="image/*" onChange={handleImageChange} style={{ display: 'none' }} />
+                                  📁 파일 선택
+                                </label>
+                              </div>
+                            )}
+                            {cameraError && <div style={styles.cameraErrorText}>{cameraError}</div>}
+                          </div>
                         </div>
                       </div>
 
@@ -650,6 +907,7 @@ const styles: Record<string, React.CSSProperties> = {
     height: '36px',
     fontSize: '13px',
     backgroundColor: 'rgba(0,0,0,0.3)',
+    color: '#ffffff',
   },
   filterOptions: {
     display: 'flex',
@@ -893,6 +1151,7 @@ const styles: Record<string, React.CSSProperties> = {
     height: '36px',
     fontSize: '13px',
     backgroundColor: 'rgba(0,0,0,0.2)',
+    color: '#ffffff',
   },
   formRow: {
     display: 'flex',
@@ -929,5 +1188,160 @@ const styles: Record<string, React.CSSProperties> = {
     border: '1px solid rgba(255,255,255,0.1)',
     padding: '2px 6px',
     borderRadius: '4px',
+  },
+  detailsImageWrapper: {
+    width: '100%',
+    borderRadius: '12px',
+    overflow: 'hidden',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+    marginBottom: '4px',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  detailsImage: {
+    width: '100%',
+    maxHeight: '160px',
+    objectFit: 'cover',
+    borderRadius: '12px',
+    transition: 'transform 0.3s ease',
+  },
+  listThumbnail: {
+    width: '56px',
+    height: '56px',
+    borderRadius: '8px',
+    objectFit: 'cover',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    flexShrink: 0,
+  },
+  cameraContainer: {
+    width: '100%',
+    minHeight: '80px',
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    borderRadius: '10px',
+    border: '1px dashed rgba(255,255,255,0.1)',
+    display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden',
+    padding: '8px',
+  },
+  cameraPlaceholder: {
+    display: 'flex',
+    gap: '10px',
+    justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: '70px',
+  },
+  cameraBtn: {
+    padding: '8px 14px',
+    fontSize: '12px',
+    backgroundColor: 'rgba(0, 242, 254, 0.1)',
+    border: '1px solid var(--accent-found)',
+    color: 'var(--accent-found)',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontWeight: '600',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    transition: 'all 0.2s ease',
+  },
+  fileUploadLabel: {
+    padding: '8px 14px',
+    fontSize: '12px',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    border: '1px solid rgba(255,255,255,0.1)',
+    color: 'var(--text-secondary)',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontWeight: '600',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    transition: 'all 0.2s ease',
+  },
+  videoWrapper: {
+    position: 'relative',
+    width: '100%',
+    borderRadius: '8px',
+    overflow: 'hidden',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    backgroundColor: '#000000',
+  },
+  videoStream: {
+    width: '100%',
+    maxHeight: '200px',
+    objectFit: 'cover',
+  },
+  videoControls: {
+    position: 'absolute',
+    bottom: '10px',
+    display: 'flex',
+    gap: '10px',
+  },
+  captureBtn: {
+    backgroundColor: 'var(--accent-found)',
+    color: '#000000',
+    border: 'none',
+    padding: '6px 14px',
+    borderRadius: '20px',
+    fontSize: '12px',
+    fontWeight: '700',
+    cursor: 'pointer',
+    boxShadow: '0 4px 10px rgba(0,242,254,0.3)',
+  },
+  stopCameraBtn: {
+    backgroundColor: 'rgba(255, 74, 107, 0.8)',
+    color: '#ffffff',
+    border: 'none',
+    padding: '6px 14px',
+    borderRadius: '20px',
+    fontSize: '12px',
+    fontWeight: '700',
+    cursor: 'pointer',
+  },
+  imagePreviewContainer: {
+    position: 'relative',
+    width: '100%',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    borderRadius: '8px',
+    overflow: 'hidden',
+    padding: '4px',
+  },
+  imagePreview: {
+    maxWidth: '100%',
+    maxHeight: '140px',
+    borderRadius: '6px',
+    objectFit: 'contain',
+  },
+  deleteImageBtn: {
+    position: 'absolute',
+    top: '8px',
+    right: '8px',
+    width: '24px',
+    height: '24px',
+    borderRadius: '50%',
+    backgroundColor: 'rgba(255, 74, 107, 0.9)',
+    border: 'none',
+    color: '#ffffff',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    fontSize: '10px',
+    fontWeight: '700',
+  },
+  cameraErrorText: {
+    fontSize: '11px',
+    color: 'var(--accent-lost)',
+    marginTop: '6px',
+    textAlign: 'center',
   },
 };
