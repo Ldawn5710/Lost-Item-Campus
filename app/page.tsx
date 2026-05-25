@@ -52,13 +52,21 @@ export default function Home() {
 
   // Load User session & Initial Items on Mount
   useEffect(() => {
-    const user = db.getActiveUser();
-    if (user) {
-      handleAuthSuccess(user);
-    } else {
-      // Load public item pins anyway to show background map previews
-      setItems(db.getItems());
+    let user = db.getActiveUser();
+    // Force session to always default to Daegu University (overwriting any previous SNU test sessions)
+    if (!user || user.email.includes('snu.ac.kr') || user.university.includes('서울') || user.university.includes('Seoul')) {
+      const mockUser = {
+        id: 'user-mock-tester',
+        email: 'test@daegu.ac.kr',
+        nickname: '캠퍼스 테스터',
+        university: '대구대학교',
+        is_verified: true,
+        created_at: new Date().toISOString()
+      };
+      db.setActiveUser(mockUser);
+      user = mockUser;
     }
+    handleAuthSuccess(user, { lat: 35.9038, lng: 128.8504 });
   }, []);
 
   // Sync active items and chat rooms periodically or after mutations
@@ -328,6 +336,7 @@ export default function Home() {
           setActiveTab={setActiveTab}
           onSelectChat={(roomId) => setActiveChatRoomId(roomId)}
           chatRooms={chatRooms}
+          onStartNavigation={handleStartNavigation}
         />
       )}
 
@@ -427,7 +436,6 @@ const styles: Record<string, React.CSSProperties> = {
   },
   langSelectBtn: {
     background: 'transparent',
-    border: 'none',
     cursor: 'pointer',
     color: 'var(--text-secondary)',
     padding: '6px 8px',
@@ -467,7 +475,6 @@ const styles: Record<string, React.CSSProperties> = {
   },
   logoutBtn: {
     background: 'transparent',
-    border: 'none',
     cursor: 'pointer',
     color: 'var(--text-muted)',
     padding: '6px',

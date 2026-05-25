@@ -36,8 +36,54 @@ class SimulatedDatabase {
       localStorage.setItem(this.profilesKey, JSON.stringify(profiles));
     }
 
-    if (!localStorage.getItem(this.itemsKey)) {
-      const defaultItems: Item[] = [];
+    if (!localStorage.getItem(this.itemsKey) || JSON.parse(localStorage.getItem(this.itemsKey) || '[]').length === 0) {
+      const defaultItems: Item[] = [
+        {
+          id: 'mock-item-1',
+          user_id: 'user-another-student-1',
+          type: 'found',
+          title: '갤럭시 버즈2 프로 (화이트)',
+          category: 'electronics',
+          latitude: 35.9015,
+          longitude: 128.8492,
+          location_detail: '대구대학교 웅지관 2층 학생 식당 입구 탁자 위',
+          description: '식사를 하던 중 탁자 위에 덩그러니 놓여 있는 화이트 색상 갤럭시 버즈2 프로 케이스를 발견하고 습득했습니다. 본체 안에 양쪽 유닛 모두 들어있는 상태입니다. 분실하신 분은 1:1 대화 주시거나 교내 센터에 문의 바래요!',
+          status: 'kept',
+          occurred_at: new Date(Date.now() - 2 * 3600000).toISOString(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+        {
+          id: 'mock-item-2',
+          user_id: 'user-another-student-2',
+          type: 'lost',
+          title: '브라운 가죽 가로형 지갑',
+          category: 'wallet',
+          latitude: 35.9048,
+          longitude: 128.8512,
+          location_detail: '대구대학교 성산홀 본관 앞 잔디밭 벤치 부근',
+          description: '성산홀 앞 잔디광장을 걷다가 지갑을 떨어뜨린 것 같습니다. 갈색 가죽 재질이며 내부에 학생증(이름: 김다구)과 체크카드가 들어있습니다. 습득하신 분은 제발 연락 주시면 사례하겠습니다 ㅠㅠ',
+          status: 'searching',
+          occurred_at: new Date(Date.now() - 12 * 3600000).toISOString(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+        {
+          id: 'mock-item-safe-1',
+          user_id: 'system',
+          type: 'found',
+          title: '🏫 안전 습득물 안심 보관소 (종합민원센터)',
+          category: 'others',
+          latitude: 35.9028,
+          longitude: 128.8475,
+          location_detail: '대구대학교 종합민원센터 안심 보관함 3호',
+          description: '교내 안심 보관소에 위탁된 물품 목록이 보관되어 있습니다. 본 보관소에 물품이 보관된 경우 종합민원센터 데스크를 방문해 주시기 바랍니다.',
+          status: 'kept',
+          occurred_at: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }
+      ];
       localStorage.setItem(this.itemsKey, JSON.stringify(defaultItems));
     }
   }

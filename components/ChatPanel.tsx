@@ -25,7 +25,7 @@ export default function ChatPanel({
   meetupAddress,
   onStartNavigation,
 }: ChatPanelProps) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const [room, setRoom] = useState<ChatRoom | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');

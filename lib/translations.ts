@@ -96,6 +96,12 @@ export const translations: Record<Language, Record<string, string>> = {
     'reg.reset_coords': '위치 재설정',
     'reg.submit_btn': '등록 완료하기',
     'reg.err_title': '물건명을 입력해 주세요.',
+    'reg.image_label': '사진 첨부 (실시간 촬영 / 파일 선택)',
+    'reg.camera_start': '📸 실시간 카메라 촬영',
+    'reg.camera_stop': '✕ 카메라 종료',
+    'reg.camera_snap': '● 사진 촬영하기',
+    'reg.camera_err': '실시간 카메라를 시작할 수 없습니다. 파일 선택을 이용해 주세요.',
+    'reg.image_preview': '사진 미리보기',
 
     // BottomSheet - Chats
     'chats.empty': '활성화된 대화방이 없습니다.',
@@ -245,6 +251,12 @@ export const translations: Record<Language, Record<string, string>> = {
     'reg.reset_coords': 'Reset Location',
     'reg.submit_btn': 'Complete Registration',
     'reg.err_title': 'Please enter the item name.',
+    'reg.image_label': 'Attach Photo (Take Live / Choose File)',
+    'reg.camera_start': '📸 Take Live Photo',
+    'reg.camera_stop': '✕ Turn Off Camera',
+    'reg.camera_snap': '● Capture Photo',
+    'reg.camera_err': 'Could not start live camera. Please use file upload instead.',
+    'reg.image_preview': 'Photo Preview',
 
     // BottomSheet - Chats
     'chats.empty': 'No active chat rooms.',
@@ -394,6 +406,12 @@ export const translations: Record<Language, Record<string, string>> = {
     'reg.reset_coords': 'Đặt lại vị trí',
     'reg.submit_btn': 'Hoàn tất đăng ký',
     'reg.err_title': 'Vui lòng nhập tên đồ vật.',
+    'reg.image_label': 'Đính kèm ảnh (Chụp trực tiếp / Chọn tệp)',
+    'reg.camera_start': '📸 Chụp ảnh trực tiếp',
+    'reg.camera_stop': '✕ Tắt camera',
+    'reg.camera_snap': '● Chụp ảnh',
+    'reg.camera_err': 'Không thể khởi động camera. Vui lòng chọn ảnh từ thiết bị.',
+    'reg.image_preview': 'Xem trước ảnh',
 
     // BottomSheet - Chats
     'chats.empty': 'Không có cuộc trò chuyện nào đang hoạt động.',
