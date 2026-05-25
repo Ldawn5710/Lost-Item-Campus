@@ -67,7 +67,7 @@ export default function AuthModal({ onAuthSuccess }: AuthModalProps) {
     }, 1200);
   };
 
-  const handleVerifyOtp = (e: React.FormEvent) => {
+  const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -78,7 +78,7 @@ export default function AuthModal({ onAuthSuccess }: AuthModalProps) {
 
     setLoading(true);
 
-    setTimeout(() => {
+    try {
       const { name: univName, lat, lng } = getUniversityName(email);
       const newUser: Profile = {
         id: 'user-' + Math.random().toString(36).substr(2, 9),
@@ -89,10 +89,14 @@ export default function AuthModal({ onAuthSuccess }: AuthModalProps) {
         created_at: new Date().toISOString()
       };
 
-      db.setActiveUser(newUser);
+      await db.setActiveUser(newUser);
       onAuthSuccess(newUser, { lat, lng });
+    } catch (err) {
+      console.error(err);
+      setError('인증 완료 과정에서 오류가 발생했습니다.');
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   };
 
   return (
