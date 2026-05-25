@@ -9,6 +9,9 @@ export const translations: Record<Language, Record<string, string>> = {
     'common.hi': '{nickname} 님',
     'common.back': '← 돌아가기',
     'common.all': '전체',
+    'common.cancel': '취소',
+    'chat.leave': '채팅방 나가기',
+    'chat.leave_confirm': '정말 이 채팅방을 나가시겠습니까? 대화 내용이 모두 삭제됩니다.',
     
     // AuthModal
     'auth.title': '안심 캠퍼스 가입',
@@ -164,6 +167,9 @@ export const translations: Record<Language, Record<string, string>> = {
     'common.hi': 'Hi, {nickname}',
     'common.back': '← Back',
     'common.all': 'All',
+    'common.cancel': 'Cancel',
+    'chat.leave': 'Leave Chat',
+    'chat.leave_confirm': 'Are you sure you want to leave this chat? All message history will be deleted.',
 
     // AuthModal
     'auth.title': 'Join Safe Campus',
@@ -319,6 +325,9 @@ export const translations: Record<Language, Record<string, string>> = {
     'common.hi': 'Chào {nickname}',
     'common.back': '← Quay lại',
     'common.all': 'Tất cả',
+    'common.cancel': 'Hủy',
+    'chat.leave': 'Rời khỏi trò chuyện',
+    'chat.leave_confirm': 'Bạn có chắc muốn rời khỏi cuộc trò chuyện? Lịch sử tin nhắn sẽ bị xóa.',
 
     // AuthModal
     'auth.title': 'Đăng ký Safe Campus',

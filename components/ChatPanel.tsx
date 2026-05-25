@@ -10,9 +10,6 @@ interface ChatPanelProps {
   roomId: string;
   activeUser: Profile | null;
   onBack: () => void;
-  onSelectMeetupMode: () => void;
-  meetupCoords: { lat: number; lng: number } | null;
-  meetupAddress: string;
   onStartNavigation: (meetupCoords: { lat: number; lng: number }, meetupAddress: string) => void;
 }
 
@@ -20,9 +17,6 @@ export default function ChatPanel({
   roomId,
   activeUser,
   onBack,
-  onSelectMeetupMode,
-  meetupCoords,
-  meetupAddress,
   onStartNavigation,
 }: ChatPanelProps) {
   const { t, language } = useTranslation();
@@ -32,15 +26,86 @@ export default function ChatPanel({
   const [showSafetyAlert, setShowSafetyAlert] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // 1. Load Room Details and Messages
+  const handleLeaveChat = async () => {
+    if (window.confirm(t('chat.leave_confirm'))) {
+      try {
+        await db.deleteChatRoom(roomId);
+        onBack();
+      } catch (err) {
+        console.error("Error leaving chat room:", err);
+      }
+    }
+  };
+
+  // 1. Load Room Details and Messages, and set up Realtime subscription if available
   useEffect(() => {
     if (!activeUser) return;
-    const rooms = db.getChatRooms(activeUser.id);
-    const currentRoom = rooms.find(r => r.id === roomId);
-    if (currentRoom) {
-      setRoom(currentRoom);
-      setMessages(db.getChatMessages(roomId));
-    }
+
+    let activeChannel: any = null;
+
+    const fetchRoomAndMessages = async () => {
+      try {
+        const rooms = await db.getChatRooms(activeUser.id);
+        const currentRoom = rooms.find(r => r.id === roomId);
+        if (currentRoom) {
+          setRoom(currentRoom);
+          const msgs = await db.getChatMessages(roomId);
+          setMessages(msgs);
+        }
+      } catch (err) {
+        console.error("Error loading chat data:", err);
+      }
+    };
+
+    fetchRoomAndMessages();
+
+    // Set up real-time subscription using Supabase Realtime if configured
+    const setupRealtime = async () => {
+      try {
+        const { isSupabaseConfigured, supabase } = await import('../lib/supabase');
+        if (isSupabaseConfigured && supabase) {
+          const channel = supabase.channel(`room:${roomId}`);
+          if (channel) {
+            activeChannel = channel
+              .on(
+                'postgres_changes',
+                { event: 'INSERT', schema: 'public', table: 'chat_messages', filter: `room_id=eq.${roomId}` },
+                (payload: any) => {
+                  const newMsg = payload.new as ChatMessage;
+                  setMessages(prev => {
+                    if (prev.some(m => m.id === newMsg.id)) return prev;
+                    return [...prev, newMsg];
+                  });
+                }
+              )
+              .on(
+                'postgres_changes',
+                { event: 'UPDATE', schema: 'public', table: 'chat_rooms', filter: `id=eq.${roomId}` },
+                (payload: any) => {
+                  const updatedRoom = payload.new as ChatRoom;
+                  setRoom(prev => prev ? {
+                    ...prev,
+                    meetup_lat: updatedRoom.meetup_lat,
+                    meetup_lng: updatedRoom.meetup_lng,
+                    meetup_place: updatedRoom.meetup_place
+                  } : null);
+                }
+              )
+              .subscribe();
+          }
+        }
+      } catch (err) {
+        console.error("Error setting up Realtime subscription:", err);
+      }
+    };
+
+    setupRealtime();
+
+    return () => {
+      if (activeChannel) {
+        activeChannel.unsubscribe();
+      }
+    };
   }, [roomId, activeUser]);
 
   // 2. Scroll to bottom
@@ -49,47 +114,46 @@ export default function ChatPanel({
   }, [messages]);
 
   // 3. Send Message
-  const handleSendMessage = (e?: React.FormEvent) => {
+  const handleSendMessage = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!inputText.trim() || !activeUser) return;
 
-    const newMsg = db.sendChatMessage(roomId, activeUser.id, inputText);
-    setMessages(prev => [...prev, newMsg]);
+    const textToSend = inputText;
     setInputText('');
 
-    // Simulated Auto-Reply for dynamic experience!
-    // Since it's a simulated environment, having the other person reply immediately makes the app feel "real" and premium!
-    setTimeout(() => {
-      if (!room) return;
-      const replies = [
-        t('reply.1'),
-        t('reply.2'),
-        t('reply.3'),
-        t('reply.4'),
-        t('reply.5')
-      ];
-      const randomReply = replies[Math.floor(Math.random() * replies.length)];
-      const autoReply = db.sendChatMessage(roomId, room.opponent?.id || 'opponent', randomReply);
-      setMessages(prev => [...prev, autoReply]);
-    }, 1500);
+    try {
+      const newMsg = await db.sendChatMessage(roomId, activeUser.id, textToSend);
+      setMessages(prev => {
+        if (prev.some(m => m.id === newMsg.id)) return prev;
+        return [...prev, newMsg];
+      });
+
+      // Simulated Auto-Reply *ONLY* for local demo (when Supabase is NOT configured)
+      const { isSupabaseConfigured } = await import('../lib/supabase');
+      if (!isSupabaseConfigured) {
+        setTimeout(async () => {
+          if (!room) return;
+          const replies = [
+            t('reply.1'),
+            t('reply.2'),
+            t('reply.3'),
+            t('reply.4'),
+            t('reply.5')
+          ];
+          const randomReply = replies[Math.floor(Math.random() * replies.length)];
+          const autoReply = await db.sendChatMessage(roomId, room.opponent?.id || 'opponent', randomReply);
+          setMessages(prev => {
+            if (prev.some(m => m.id === autoReply.id)) return prev;
+            return [...prev, autoReply];
+          });
+        }, 1500);
+      }
+    } catch (err) {
+      console.error("Error sending chat message:", err);
+    }
   };
 
-  // 4. Set Meetup Point (Sends a system message with Navigation button)
-  useEffect(() => {
-    if (!meetupCoords || !room || !activeUser) return;
 
-    // Trigger meetup creation in database
-    db.updateChatRoomMeetup(roomId, meetupCoords.lat, meetupCoords.lng, meetupAddress);
-    
-    // Send system message
-    const msgText = t('sys.meetup_set', { meetupAddress });
-    const systemMsg = db.sendChatMessage(roomId, 'system', msgText, true);
-    
-    setMessages(prev => [...prev, systemMsg]);
-
-    // Force updates to room state
-    setRoom(prev => prev ? { ...prev, meetup_lat: meetupCoords.lat, meetup_lng: meetupCoords.lng, meetup_place: meetupAddress } : null);
-  }, [meetupCoords]);
 
   if (!room) return null;
 
@@ -104,26 +168,34 @@ export default function ChatPanel({
           <strong style={{ fontSize: '15px' }}>{room.opponent?.nickname}{language === 'ko' ? ' 님' : ''}</strong>
           <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{room.opponent?.university}</span>
         </div>
+        <button 
+          style={styles.leaveChatBtn} 
+          onClick={handleLeaveChat}
+          title={t('chat.leave')}
+        >
+          <span style={{ fontSize: '11px', marginRight: '4px', fontWeight: 600 }}>{t('chat.leave')}</span>
+          <X size={14} color="var(--accent-lost)" />
+        </button>
       </div>
 
       {/* B. Associated Item Micro Card */}
       {room.item && (
         <div style={styles.itemCard}>
           <div style={styles.itemThumbnail}>
-            {room.item.type === 'lost' ? '🔴' : '🔵'}
+            {room.item.image_url ? (
+              <img
+                src={room.item.image_url}
+                alt=""
+                style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }}
+              />
+            ) : (
+              room.item.type === 'lost' ? '🔴' : '🔵'
+            )}
           </div>
           <div style={{ flex: 1, overflow: 'hidden' }}>
             <h4 style={styles.itemTitle}>{room.item.title}</h4>
             <span style={styles.itemPlace}>{room.item.location_detail}</span>
           </div>
-          <button
-            className="glass-button primary"
-            style={styles.meetupBtn}
-            onClick={onSelectMeetupMode}
-          >
-            <MapPin size={14} />
-            <span>{t('chat.meetup_btn')}</span>
-          </button>
         </div>
       )}
 
@@ -253,6 +325,19 @@ const styles: Record<string, React.CSSProperties> = {
   headerInfo: {
     display: 'flex',
     flexDirection: 'column',
+    flex: 1,
+  },
+  leaveChatBtn: {
+    background: 'rgba(255, 74, 107, 0.08)',
+    border: '1px solid rgba(255, 74, 107, 0.2)',
+    borderRadius: '16px',
+    color: 'var(--text-primary)',
+    cursor: 'pointer',
+    padding: '4px 10px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    transition: 'all 0.2s ease',
   },
   itemCard: {
     display: 'flex',

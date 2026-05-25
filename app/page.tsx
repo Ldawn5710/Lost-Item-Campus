@@ -33,9 +33,6 @@ export default function Home() {
   // 4. Chat Panel States
   const [activeChatRoomId, setActiveChatRoomId] = useState<string | null>(null);
   const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
-  const [meetupSelectionMode, setMeetupSelectionMode] = useState(false);
-  const [tempMeetupCoords, setTempMeetupCoords] = useState<{ lat: number; lng: number } | null>(null);
-  const [tempMeetupAddress, setTempMeetupAddress] = useState('');
   const [showLangMenu, setShowLangMenu] = useState(false);
 
   // 5. Walking Route Navigation States
@@ -52,27 +49,38 @@ export default function Home() {
 
   // Load User session & Initial Items on Mount
   useEffect(() => {
-    let user = db.getActiveUser();
-    // Force session to always default to Daegu University (overwriting any previous SNU test sessions)
-    if (!user || user.email.includes('snu.ac.kr') || user.university.includes('서울') || user.university.includes('Seoul')) {
-      const mockUser = {
-        id: 'user-mock-tester',
-        email: 'test@daegu.ac.kr',
-        nickname: '캠퍼스 테스터',
-        university: '대구대학교',
-        is_verified: true,
-        created_at: new Date().toISOString()
-      };
-      db.setActiveUser(mockUser);
-      user = mockUser;
-    }
-    handleAuthSuccess(user, { lat: 35.9038, lng: 128.8504 });
+    const initSession = async () => {
+      let user = db.getActiveUser();
+      // Force session to always default to Daegu University (overwriting any previous SNU test sessions)
+      if (!user || user.email.includes('snu.ac.kr') || user.university.includes('서울') || user.university.includes('Seoul')) {
+        const mockUser = {
+          id: 'user-mock-tester',
+          email: 'test@daegu.ac.kr',
+          nickname: '캠퍼스 테스터',
+          university: '대구대학교',
+          is_verified: true,
+          created_at: new Date().toISOString()
+        };
+        await db.setActiveUser(mockUser);
+        user = mockUser;
+      }
+      handleAuthSuccess(user, { lat: 35.9038, lng: 128.8504 });
+    };
+    initSession();
   }, []);
 
   // Sync active items and chat rooms periodically or after mutations
-  const syncDatabaseState = (userId: string) => {
-    setItems(db.getItems());
-    setChatRooms(db.getChatRooms(userId));
+  const syncDatabaseState = async (userId: string) => {
+    try {
+      const [fetchedItems, fetchedRooms] = await Promise.all([
+        db.getItems(),
+        db.getChatRooms(userId)
+      ]);
+      setItems(fetchedItems);
+      setChatRooms(fetchedRooms);
+    } catch (err) {
+      console.error("Error syncing database state:", err);
+    }
   };
 
   const handleAuthSuccess = (user: Profile, coords?: { lat: number; lng: number }) => {
@@ -86,8 +94,8 @@ export default function Home() {
     syncDatabaseState(user.id);
   };
 
-  const handleLogout = () => {
-    db.setActiveUser(null);
+  const handleLogout = async () => {
+    await db.setActiveUser(null);
     setActiveUser(null);
     setSelectedItem(null);
     setActiveChatRoomId(null);
@@ -97,38 +105,27 @@ export default function Home() {
   };
 
   // 6. Registration Callback
-  const handleRegisterItem = (newItemData: Omit<Item, 'id' | 'created_at' | 'updated_at'>) => {
-    const createdItem = db.saveItem(newItemData);
-    syncDatabaseState(activeUser?.id || 'anonymous');
-    setMapCenter({ lat: createdItem.latitude, lng: createdItem.longitude });
-    setSelectedItem(createdItem);
-    setIsRegistering(false);
-    setRegistrationCoords(null);
-    setRegistrationAddress(t('reg.tap_map_helper'));
+  const handleRegisterItem = async (newItemData: Omit<Item, 'id' | 'created_at' | 'updated_at'>) => {
+    try {
+      const createdItem = await db.saveItem(newItemData);
+      await syncDatabaseState(activeUser?.id || 'anonymous');
+      setMapCenter({ lat: createdItem.latitude, lng: createdItem.longitude });
+      setSelectedItem(createdItem);
+      setIsRegistering(false);
+      setRegistrationCoords(null);
+      setRegistrationAddress(t('reg.tap_map_helper'));
+    } catch (err) {
+      console.error("Error registering item:", err);
+    }
   };
 
   const handlePinSelect = (item: Item) => {
-    // Check if we are selecting meetup location for chat
-    if (meetupSelectionMode) {
-      setTempMeetupCoords({ lat: item.latitude, lng: item.longitude });
-      setTempMeetupAddress(item.location_detail || item.title);
-      setMeetupSelectionMode(false);
-      return;
-    }
-
     setSelectedItem(item);
     setMapCenter({ lat: item.latitude, lng: item.longitude });
   };
 
   // 7. Interactive Map Coordinates selection handler
   const handleRegistrationCoordsChange = (coords: { lat: number; lng: number }, address: string) => {
-    if (meetupSelectionMode) {
-      setTempMeetupCoords(coords);
-      setTempMeetupAddress(address);
-      setMeetupSelectionMode(false);
-      return;
-    }
-
     if (isRegistering) {
       setRegistrationCoords(coords);
       setRegistrationAddress(address);
@@ -136,13 +133,17 @@ export default function Home() {
   };
 
   // 8. Chat Room Activation
-  const handleStartChat = (item: Item) => {
+  const handleStartChat = async (item: Item) => {
     if (!activeUser) return;
 
-    // Create or locate chat room
-    const room = db.createChatRoom(item.id, activeUser.id, item.user_id);
-    syncDatabaseState(activeUser.id);
-    setActiveChatRoomId(room.id);
+    try {
+      // Create or locate chat room
+      const room = await db.createChatRoom(item.id, activeUser.id, item.user_id);
+      await syncDatabaseState(activeUser.id);
+      setActiveChatRoomId(room.id);
+    } catch (err) {
+      console.error("Error starting chat:", err);
+    }
   };
 
   // 9. Meetup Navigation Activation
@@ -152,30 +153,38 @@ export default function Home() {
   };
 
   // 10. receipt confirmation (resolved state transaction)
-  const handleConfirmReceipt = () => {
-    if (selectedItem) {
-      db.updateItemStatus(selectedItem.id, 'resolved');
-    }
+  const handleConfirmReceipt = async () => {
+    try {
+      if (selectedItem) {
+        await db.updateItemStatus(selectedItem.id, 'resolved');
+      }
 
-    // Send auto system finish message to the active chat
-    if (activeChatRoomId) {
-      db.sendChatMessage(
-        activeChatRoomId,
-        'system',
-        t('sys.completed'),
-        true
-      );
-    }
+      // Send auto system finish message to the active chat
+      if (activeChatRoomId) {
+        await db.sendChatMessage(
+          activeChatRoomId,
+          'system',
+          t('sys.completed'),
+          true
+        );
+      }
 
-    syncDatabaseState(activeUser?.id || 'anonymous');
-    setNavigationTarget(null);
-    setSelectedItem(null);
+      await syncDatabaseState(activeUser?.id || 'anonymous');
+      setNavigationTarget(null);
+      setSelectedItem(null);
+    } catch (err) {
+      console.error("Error confirming receipt:", err);
+    }
   };
 
-  const handleDeleteItem = (itemId: string) => {
-    db.deleteItem(itemId);
-    syncDatabaseState(activeUser?.id || 'anonymous');
-    setSelectedItem(null);
+  const handleDeleteItem = async (itemId: string) => {
+    try {
+      await db.deleteItem(itemId);
+      await syncDatabaseState(activeUser?.id || 'anonymous');
+      setSelectedItem(null);
+    } catch (err) {
+      console.error("Error deleting item:", err);
+    }
   };
 
   // Floating button to reset map to user live location
@@ -276,20 +285,12 @@ export default function Home() {
         center={mapCenter}
         items={items}
         onPinSelect={handlePinSelect}
-        isRegistering={isRegistering || meetupSelectionMode}
-        registrationCoords={isRegistering ? registrationCoords : tempMeetupCoords}
+        isRegistering={isRegistering}
+        registrationCoords={registrationCoords}
         onRegistrationCoordsChange={handleRegistrationCoordsChange}
         activeRoute={navigationTarget ? { start: userLocation || mapCenter, end: navigationTarget.coords } : null}
         userLocation={userLocation}
       />
-
-      {/* Meetup Selector Prompt Layer */}
-      {meetupSelectionMode && (
-        <div style={styles.meetupPrompt} className="glass-panel">
-          <MapPin size={18} color="var(--accent-found)" className="pulse-indicator found" />
-          <span>{t('map.meetup_prompt')}</span>
-        </div>
-      )}
 
       {/* Registration Location Pinned prompt (PRD UX enhancement) */}
       {isRegistering && !registrationCoords && (
@@ -334,7 +335,9 @@ export default function Home() {
           onStartChat={handleStartChat}
           activeTab={activeTab}
           setActiveTab={setActiveTab}
-          onSelectChat={(roomId) => setActiveChatRoomId(roomId)}
+          onSelectChat={(roomId) => {
+            setActiveChatRoomId(roomId);
+          }}
           chatRooms={chatRooms}
           onStartNavigation={handleStartNavigation}
         />
@@ -349,12 +352,6 @@ export default function Home() {
             setActiveChatRoomId(null);
             syncDatabaseState(activeUser.id);
           }}
-          onSelectMeetupMode={() => {
-            setMeetupSelectionMode(true);
-            setTempMeetupCoords(null);
-          }}
-          meetupCoords={tempMeetupCoords}
-          meetupAddress={tempMeetupAddress}
           onStartNavigation={handleStartNavigation}
         />
       )}
@@ -519,5 +516,16 @@ const styles: Record<string, React.CSSProperties> = {
     color: 'var(--text-primary)',
     fontWeight: '600',
     boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+  },
+  cancelMeetupBtn: {
+    background: 'rgba(255, 74, 107, 0.15)',
+    border: '1px solid rgba(255, 74, 107, 0.3)',
+    borderRadius: '8px',
+    color: 'var(--text-primary)',
+    cursor: 'pointer',
+    padding: '4px 10px',
+    fontSize: '11px',
+    marginLeft: '10px',
+    transition: 'all 0.2s ease',
   },
 };
