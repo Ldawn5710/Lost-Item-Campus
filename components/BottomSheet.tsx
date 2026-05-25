@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, Filter, PlusCircle, MessageSquare, MapPin, Calendar, Tag, FileText, ArrowRight, CheckCircle2, ChevronUp, ChevronDown } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { Search, Filter, PlusCircle, MessageSquare, MapPin, Calendar, Tag, FileText, ArrowRight, CheckCircle2, ChevronUp, ChevronDown, ZoomIn, ZoomOut, X, RefreshCw } from 'lucide-react';
 import { Item, ItemType, ItemStatus, Profile } from '../lib/types';
 import { useTranslation } from '../lib/LanguageContext';
 
@@ -62,6 +63,30 @@ export default function BottomSheet({
   const [regImage, setRegImage] = useState('');
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
+
+  // Zoom modal states
+  const [isZoomOpen, setIsZoomOpen] = useState(false);
+  const [zoomScale, setZoomScale] = useState(1);
+
+  const handleImageClick = () => {
+    setIsZoomOpen(true);
+    setZoomScale(1);
+  };
+
+  const handleZoomIn = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setZoomScale(prev => Math.min(prev + 0.25, 4));
+  };
+
+  const handleZoomOut = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setZoomScale(prev => Math.max(prev - 0.25, 0.5));
+  };
+
+  const handleResetZoom = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setZoomScale(1);
+  };
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -324,28 +349,52 @@ export default function BottomSheet({
               </div>
 
               <div style={styles.detailsScroll}>
-                <h3 style={styles.itemTitle}>{selectedItem.title}</h3>
-
-                {selectedItem.image_url && (
-                  <div style={styles.detailsImageWrapper}>
-                    <img src={selectedItem.image_url} alt={selectedItem.title} style={styles.detailsImage} />
+                {selectedItem.image_url ? (
+                  <div style={styles.detailsSplitBody}>
+                    <div style={styles.detailsLeftCol}>
+                      <h3 style={styles.itemTitle}>{selectedItem.title}</h3>
+                      <div style={styles.metaRow}>
+                        <div style={styles.metaItem}><Tag size={14} /> <span>{t(`category.${selectedItem.category}`)}</span></div>
+                        <div style={styles.metaItem}><Calendar size={14} /> <span>{getLocaleString(selectedItem.occurred_at)}</span></div>
+                      </div>
+                      <div style={styles.metaRow}>
+                        <div style={styles.metaItem}><MapPin size={14} /> <strong>{selectedItem.location_detail}</strong></div>
+                      </div>
+                      {selectedItem.description && (
+                        <div style={styles.descriptionBox}>
+                          <h4 style={styles.sectionLabel}>{t('details.section_label')}</h4>
+                          <p style={styles.descriptionText}>{selectedItem.description}</p>
+                        </div>
+                      )}
+                    </div>
+                    <div style={styles.detailsRightCol}>
+                      <div style={styles.detailsImageWrapper}>
+                        <img 
+                          src={selectedItem.image_url} 
+                          alt={selectedItem.title} 
+                          style={styles.detailsImage} 
+                          onClick={handleImageClick}
+                        />
+                      </div>
+                    </div>
                   </div>
-                )}
-
-                <div style={styles.metaRow}>
-                  <div style={styles.metaItem}><Tag size={14} /> <span>{t(`category.${selectedItem.category}`)}</span></div>
-                  <div style={styles.metaItem}><Calendar size={14} /> <span>{getLocaleString(selectedItem.occurred_at)}</span></div>
-                </div>
-
-                <div style={styles.metaRow}>
-                  <div style={styles.metaItem}><MapPin size={14} /> <strong>{selectedItem.location_detail}</strong></div>
-                </div>
-
-                {selectedItem.description && (
-                  <div style={styles.descriptionBox}>
-                    <h4 style={styles.sectionLabel}>{t('details.section_label')}</h4>
-                    <p style={styles.descriptionText}>{selectedItem.description}</p>
-                  </div>
+                ) : (
+                  <>
+                    <h3 style={styles.itemTitle}>{selectedItem.title}</h3>
+                    <div style={styles.metaRow}>
+                      <div style={styles.metaItem}><Tag size={14} /> <span>{t(`category.${selectedItem.category}`)}</span></div>
+                      <div style={styles.metaItem}><Calendar size={14} /> <span>{getLocaleString(selectedItem.occurred_at)}</span></div>
+                    </div>
+                    <div style={styles.metaRow}>
+                      <div style={styles.metaItem}><MapPin size={14} /> <strong>{selectedItem.location_detail}</strong></div>
+                    </div>
+                    {selectedItem.description && (
+                      <div style={styles.descriptionBox}>
+                        <h4 style={styles.sectionLabel}>{t('details.section_label')}</h4>
+                        <p style={styles.descriptionText}>{selectedItem.description}</p>
+                      </div>
+                    )}
+                  </>
                 )}
 
                 {/* Similarity Scoring Engine Banner (PRD 5.1) */}
@@ -593,28 +642,38 @@ export default function BottomSheet({
                           className="glass-panel"
                           onClick={() => onSelectItem(item)}
                         >
-                          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                            {item.image_url && (
-                              <img src={item.image_url} alt="" style={styles.listThumbnail} />
-                            )}
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={styles.itemHeader}>
-                                <span style={{
-                                  ...styles.badgeSmall,
-                                  backgroundColor: item.type === 'lost' ? 'rgba(255, 74, 107, 0.15)' : 'rgba(0, 242, 254, 0.15)',
-                                  color: item.type === 'lost' ? 'var(--accent-lost)' : 'var(--accent-found)'
-                                }}>
-                                  {item.type === 'lost' ? t('explore.badge_lost') : t('explore.badge_found')}
-                                </span>
-                                <span style={styles.itemTime}>
-                                  {getLocaleDateString(item.occurred_at)}
-                                </span>
+                          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                            {/* Left: Info + Photo directly to the right of text */}
+                            <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flex: 1, minWidth: 0 }}>
+                              {/* Text Info */}
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: 0 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <span style={{
+                                    ...styles.badgeSmall,
+                                    backgroundColor: item.type === 'lost' ? 'rgba(255, 74, 107, 0.15)' : 'rgba(0, 242, 254, 0.15)',
+                                    color: item.type === 'lost' ? 'var(--accent-lost)' : 'var(--accent-found)'
+                                  }}>
+                                    {item.type === 'lost' ? t('explore.badge_lost') : t('explore.badge_found')}
+                                  </span>
+                                </div>
+                                <h4 style={{ ...styles.listTitle, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', margin: 0 }}>{item.title}</h4>
+                                <div style={{ ...styles.listLoc, margin: 0 }}>
+                                  <MapPin size={12} />
+                                  <span style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{item.location_detail}</span>
+                                </div>
                               </div>
-                              <h4 style={{ ...styles.listTitle, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{item.title}</h4>
-                              <div style={styles.listLoc}>
-                                <MapPin size={12} />
-                                <span style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{item.location_detail}</span>
-                              </div>
+
+                              {/* Photo directly next to the text */}
+                              {item.image_url && (
+                                <img src={item.image_url} alt="" style={styles.listThumbnail} />
+                              )}
+                            </div>
+
+                            {/* Right: Date (at the very far right end) */}
+                            <div style={{ flexShrink: 0, marginLeft: '12px' }}>
+                              <span style={styles.itemTime}>
+                                {getLocaleDateString(item.occurred_at)}
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -814,6 +873,50 @@ export default function BottomSheet({
               )}
             </>
           )}
+      {isZoomOpen && selectedItem && selectedItem.image_url && typeof document !== 'undefined' && createPortal(
+        <div style={styles.zoomOverlay} onClick={() => setIsZoomOpen(false)}>
+          {/* Top Close Button */}
+          <button 
+            style={styles.zoomCloseBtn} 
+            onClick={() => setIsZoomOpen(false)}
+            title="닫기"
+          >
+            <X size={24} color="#ffffff" />
+          </button>
+
+          {/* Image Container */}
+          <div style={styles.zoomImageContainer}>
+            <img 
+              src={selectedItem.image_url} 
+              alt={selectedItem.title} 
+              style={{
+                ...styles.zoomImage,
+                transform: `scale(${zoomScale})`,
+              }} 
+              onClick={(e) => {
+                e.stopPropagation(); // Prevent closing overlay when clicking image
+                // Toggle zoom scale between 1 and 2
+                setZoomScale(prev => prev === 1 ? 2 : 1);
+              }}
+            />
+          </div>
+
+          {/* Zoom Control Bar */}
+          <div style={styles.zoomControls} onClick={(e) => e.stopPropagation()}>
+            <button style={styles.zoomBtn} onClick={handleZoomOut} disabled={zoomScale <= 0.5}>
+              <ZoomOut size={18} />
+            </button>
+            <span style={styles.zoomScaleText}>{Math.round(zoomScale * 100)}%</span>
+            <button style={styles.zoomBtn} onClick={handleZoomIn} disabled={zoomScale >= 4}>
+              <ZoomIn size={18} />
+            </button>
+            <button style={styles.zoomBtn} onClick={handleResetZoom}>
+              <RefreshCw size={16} />
+            </button>
+          </div>
+        </div>,
+        document.body
+      )}
         </div>
       )}
     </div>
@@ -1189,22 +1292,45 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '2px 6px',
     borderRadius: '4px',
   },
+  detailsSplitBody: {
+    display: 'flex',
+    flexDirection: 'row',
+    gap: '16px',
+    width: '100%',
+    alignItems: 'stretch',
+  },
+  detailsLeftCol: {
+    flex: '1.2',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '10px',
+    minWidth: 0,
+  },
+  detailsRightCol: {
+    flex: '1',
+    display: 'flex',
+    flexDirection: 'column',
+    minWidth: 0,
+  },
   detailsImageWrapper: {
     width: '100%',
-    height: '180px',
-    borderRadius: '12px',
-    overflow: 'hidden',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
-    backgroundColor: 'rgba(0,0,0,0.2)',
-    boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+    height: '100%',
+    minHeight: '140px',
+    maxHeight: '200px',
     marginBottom: '4px',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   detailsImage: {
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover',
+    maxWidth: '100%',
+    maxHeight: '200px',
+    objectFit: 'contain',
     borderRadius: '12px',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
     transition: 'transform 0.3s ease',
+    cursor: 'zoom-in',
   },
   listThumbnail: {
     width: '56px',
@@ -1341,5 +1467,91 @@ const styles: Record<string, React.CSSProperties> = {
     color: 'var(--accent-lost)',
     marginTop: '6px',
     textAlign: 'center',
+  },
+  zoomOverlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    width: '100vw',
+    height: '100vh',
+    backgroundColor: 'rgba(5, 8, 20, 0.9)',
+    backdropFilter: 'blur(16px)',
+    WebkitBackdropFilter: 'blur(16px)',
+    zIndex: 99999,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'zoom-out',
+  },
+  zoomCloseBtn: {
+    position: 'absolute',
+    top: '24px',
+    right: '24px',
+    background: 'rgba(255, 255, 255, 0.1)',
+    border: '1px solid rgba(255, 255, 255, 0.15)',
+    borderRadius: '50%',
+    width: '44px',
+    height: '44px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    zIndex: 100000,
+  },
+  zoomImageContainer: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+    padding: '40px',
+  },
+  zoomImage: {
+    maxWidth: '90%',
+    maxHeight: '80%',
+    objectFit: 'contain',
+    borderRadius: '12px',
+    boxShadow: '0 12px 48px rgba(0,0,0,0.6)',
+    transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+    cursor: 'zoom-in',
+  },
+  zoomControls: {
+    position: 'absolute',
+    bottom: '40px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    backgroundColor: 'rgba(10, 14, 26, 0.8)',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    padding: '8px 16px',
+    borderRadius: '30px',
+    boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+    backdropFilter: 'blur(8px)',
+    WebkitBackdropFilter: 'blur(8px)',
+  },
+  zoomBtn: {
+    background: 'transparent',
+    border: 'none',
+    color: '#ffffff',
+    cursor: 'pointer',
+    width: '32px',
+    height: '32px',
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    transition: 'background-color 0.2s',
+  },
+  zoomScaleText: {
+    color: '#ffffff',
+    fontSize: '13px',
+    fontWeight: '600',
+    minWidth: '48px',
+    textAlign: 'center',
+    fontFamily: 'var(--font-accent)',
   },
 };
