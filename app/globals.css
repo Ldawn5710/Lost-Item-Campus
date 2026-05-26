@@ -312,3 +312,70 @@ body {
     opacity: 0;
   }
 }
+
+/* --- Smart Match Notification System Animations & Styles --- */
+
+@keyframes toastSlideIn {
+  0% {
+    transform: translate(-50%, -100px);
+    opacity: 0;
+  }
+  100% {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+}
+
+@keyframes toastSlideOut {
+  0% {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -120px);
+    opacity: 0;
+  }
+}
+
+@keyframes bellRing {
+  0%, 100% { transform: rotate(0); }
+  10%, 90% { transform: rotate(15deg); }
+  20%, 80% { transform: rotate(-10deg); }
+  30%, 50%, 70% { transform: rotate(20deg); }
+  40%, 60% { transform: rotate(-15deg); }
+}
+
+@keyframes bellPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(0, 242, 254, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(0, 242, 254, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 242, 254, 0);
+  }
+}
+
+.match-toast {
+  animation-duration: 0.4s;
+  animation-timing-function: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  animation-fill-mode: forwards;
+}
+
+.toast-show {
+  animation-name: toastSlideIn;
+}
+
+.toast-hide {
+  animation-name: toastSlideOut;
+}
+
+.bell-ringing {
+  animation: bellRing 1.2s ease-in-out infinite;
+  transform-origin: top center;
+}
+
+.bell-pulsing {
+  animation: bellPulse 1.8s infinite;
+}

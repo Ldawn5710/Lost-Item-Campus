@@ -19,7 +19,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'auth.role_student': '교내 구성원 (학생/교직원)',
     'auth.role_student_desc': '학교 이메일(.ac.kr / .edu) 인증을 통해 모든 기능을 제한 없이 이용할 수 있습니다.',
     'auth.role_guest': '일반 방문자 / 외부인',
-    'auth.role_guest_desc': '일반 이메일로 가입하며, 물품 등록 제한(24시간 내 최대 2개) 및 대 diện 대화 시 안전 주의 경고가 표시됩니다.',
+    'auth.role_guest_desc': '일반 이메일로 가입하며, 물품 등록 제한(24시간 내 최대 2개) 및 대면 대화 시 안전 주의 경고가 표시됩니다.',
     'auth.email_guest_placeholder': '이메일 주소 또는 전화번호 입력',
     'auth.email_guest_helper': '* 일반 이메일(Gmail, Naver 등) 또는 휴대전화 번호를 입력해 주세요.',
     'auth.title': '안심 캠퍼스 가입',
@@ -170,6 +170,13 @@ export const translations: Record<Language, Record<string, string>> = {
     'reply.3': '감사합니다! 학생회관 쪽에서 만나면 좋을 것 같아요.',
     'reply.4': '도착하시면 말씀 부탁드려요!',
     'reply.5': '우와 정말 다행이네요! 안전하게 만나서 받겠습니다.',
+
+    // Match Notifications
+    'common.notifications': '알림',
+    'notification.title': '유사 물품 매칭 알림',
+    'notification.empty': '새로운 알림이 없습니다.',
+    'notification.clear': '모두 지우기',
+    'notification.toast_click': '확인하기',
   },
   en: {
     // Meta / Common
@@ -340,6 +347,13 @@ export const translations: Record<Language, Record<string, string>> = {
     'reply.3': 'Thank you! It would be great to meet near the Student Center.',
     'reply.4': 'Please let me know when you arrive!',
     'reply.5': 'Wow, that is such a relief! I will meet you safely.',
+
+    // Match Notifications
+    'common.notifications': 'Notifications',
+    'notification.title': 'Smart Match Alert',
+    'notification.empty': 'No new notifications.',
+    'notification.clear': 'Clear All',
+    'notification.toast_click': 'View',
   },
   vi: {
     // Meta / Common
@@ -491,7 +505,7 @@ export const translations: Record<Language, Record<string, string>> = {
     // Categories
     'category.electronics': 'Thiết bị điện tử',
     'category.wallet': 'Ví/Thẻ',
-    'category.bag': 'Túi xách/Bao lô',
+    'category.bag': 'Túi xách/Ba lô',
     'category.clothing': 'Quần áo',
     'category.cosmetics': 'Mỹ phẩm',
     'category.others': 'Khác',
@@ -510,5 +524,12 @@ export const translations: Record<Language, Record<string, string>> = {
     'reply.3': 'Cảm ơn bạn! Gặp nhau ở khu vực sảnh hội sinh viên được không ạ.',
     'reply.4': 'Khi nào đến nơi bạn nhắn mình nhé!',
     'reply.5': 'Trời ơi may quá! Mình sẽ hẹn gặp nhận đồ an toàn.',
+
+    // Match Notifications
+    'common.notifications': 'Thông báo',
+    'notification.title': 'Thông báo Khớp đồ',
+    'notification.empty': 'Không có thông báo mới.',
+    'notification.clear': 'Xóa tất cả',
+    'notification.toast_click': 'Xem chi tiết',
   },
 };

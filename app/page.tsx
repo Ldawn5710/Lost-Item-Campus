@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Compass, LogOut, MapPin, User, ShieldCheck, Globe, ChevronDown } from 'lucide-react';
-import { Profile, Item, ChatRoom } from '../lib/types';
+import { Compass, LogOut, MapPin, User, ShieldCheck, Globe, ChevronDown, Bell } from 'lucide-react';
+import { Profile, Item, ChatRoom, Notification } from '../lib/types';
 import { db } from '../lib/supabase';
 import { useTranslation } from '../lib/LanguageContext';
 
@@ -34,6 +34,12 @@ export default function Home() {
   const [activeChatRoomId, setActiveChatRoomId] = useState<string | null>(null);
   const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
   const [showLangMenu, setShowLangMenu] = useState(false);
+
+  // 4b. Notification States
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [showNotifMenu, setShowNotifMenu] = useState(false);
+  const [activeToast, setActiveToast] = useState<Notification | null>(null);
+  const [toastVisible, setToastVisible] = useState(false);
 
   // 5. Walking Route Navigation States
   const [navigationTarget, setNavigationTarget] = useState<{
@@ -73,15 +79,49 @@ export default function Home() {
     initSession();
   }, []);
 
-  // Sync active items and chat rooms periodically or after mutations
+  // Real-time Notification listener hook
+  useEffect(() => {
+    if (!activeUser) return;
+
+    const handleNewNotification = (e: Event) => {
+      const customEvent = e as CustomEvent<Notification>;
+      const notif = customEvent.detail;
+      
+      // Make sure the notification is intended for the logged-in user
+      if (notif.user_id === activeUser.id) {
+        // Update notification list
+        setNotifications(prev => [notif, ...prev]);
+        
+        // Show real-time slide-down Toast Alert
+        setActiveToast(notif);
+        setToastVisible(true);
+        
+        // Automatically hide toast after 6 seconds
+        const timer = setTimeout(() => {
+          setToastVisible(false);
+        }, 6000);
+
+        return () => clearTimeout(timer);
+      }
+    };
+
+    window.addEventListener('safe_campus_new_notification', handleNewNotification);
+    return () => {
+      window.removeEventListener('safe_campus_new_notification', handleNewNotification);
+    };
+  }, [activeUser]);
+
+  // Sync active items, chat rooms, and notifications periodically or after mutations
   const syncDatabaseState = async (userId: string) => {
     try {
-      const [fetchedItems, fetchedRooms] = await Promise.all([
+      const [fetchedItems, fetchedRooms, fetchedNotifs] = await Promise.all([
         db.getItems(),
-        db.getChatRooms(userId)
+        db.getChatRooms(userId),
+        db.getNotifications(userId)
       ]);
       setItems(fetchedItems);
       setChatRooms(fetchedRooms);
+      setNotifications(fetchedNotifs);
     } catch (err) {
       console.error("Error syncing database state:", err);
     }
@@ -191,6 +231,29 @@ export default function Home() {
     }
   };
 
+  const handleNotificationClick = async (notif: Notification) => {
+    await db.markNotificationAsRead(notif.id);
+    if (activeUser) {
+      await syncDatabaseState(activeUser.id);
+    }
+    
+    const matched = items.find(i => i.id === notif.item_id);
+    if (matched) {
+      setMapCenter({ lat: matched.latitude, lng: matched.longitude });
+      setSelectedItem(matched);
+      setActiveTab('explore');
+    }
+    
+    setShowNotifMenu(false);
+    setToastVisible(false);
+  };
+
+  const handleClearNotifications = async () => {
+    if (!activeUser) return;
+    await db.clearNotifications(activeUser.id);
+    await syncDatabaseState(activeUser.id);
+  };
+
   // Floating button to reset map to user live location
   const handlePanToUserLocation = () => {
     if (userLocation) {
@@ -216,6 +279,29 @@ export default function Home() {
 
   return (
     <main style={styles.main}>
+      {/* Real-time Slide-down Toast Match Notification (WOW factor!) */}
+      {activeToast && (
+        <div
+          className={`glass-panel match-toast ${toastVisible ? 'toast-show' : 'toast-hide'}`}
+          style={styles.toastContainer}
+          onClick={() => handleNotificationClick(activeToast)}
+        >
+          <div style={styles.toastGlowBadge}>
+            <Bell size={20} color="var(--accent-found)" className="bell-ringing" />
+          </div>
+          <div style={styles.toastContent}>
+            <div style={styles.toastHeader}>
+              <span style={styles.toastTitle}>{t('notification.title')}</span>
+              <span style={styles.toastTime}>방금 전</span>
+            </div>
+            <p style={styles.toastMessage}>{activeToast.message}</p>
+          </div>
+          <button style={styles.toastButton}>
+            {t('notification.toast_click')}
+          </button>
+        </div>
+      )}
+
       {/* Dynamic Security Verification Portal (Auth Shield) */}
       {!activeUser && <AuthModal onAuthSuccess={handleAuthSuccess} />}
 
@@ -235,6 +321,72 @@ export default function Home() {
             <div style={styles.profileBadge}>
               <User size={14} />
               <span>{t('common.hi', { nickname: activeUser.nickname })}</span>
+            </div>
+
+            {/* Notification Bell Center in Banner */}
+            <div style={styles.notifContainer}>
+              <button
+                style={{
+                  ...styles.langSelectBtn,
+                  position: 'relative',
+                  backgroundColor: showNotifMenu ? 'rgba(0, 242, 254, 0.15)' : 'rgba(255, 255, 255, 0.05)',
+                  border: showNotifMenu ? '1px solid rgba(0, 242, 254, 0.3)' : '1px solid rgba(255, 255, 255, 0.05)',
+                }}
+                onClick={() => {
+                  setShowNotifMenu(!showNotifMenu);
+                  setShowLangMenu(false); // Close language menu if open
+                }}
+                title={t('common.notifications')}
+                className={notifications.some(n => !n.is_read) ? 'bell-pulsing' : ''}
+              >
+                <Bell size={15} color={notifications.some(n => !n.is_read) ? 'var(--accent-found)' : 'var(--text-secondary)'} />
+                {notifications.some(n => !n.is_read) && (
+                  <span style={styles.notifBadge}>
+                    {notifications.filter(n => !n.is_read).length}
+                  </span>
+                )}
+              </button>
+              
+              {showNotifMenu && (
+                <div style={styles.notifDropdown} className="glass-panel">
+                  <div style={styles.notifHeader}>
+                    <span style={styles.notifTitle}>{t('notification.title')}</span>
+                    {notifications.length > 0 && (
+                      <button style={styles.notifClearBtn} onClick={handleClearNotifications}>
+                        {t('notification.clear')}
+                      </button>
+                    )}
+                  </div>
+                  
+                  <div style={styles.notifList}>
+                    {notifications.length === 0 ? (
+                      <div style={styles.notifEmpty}>
+                        {t('notification.empty')}
+                      </div>
+                    ) : (
+                      notifications.map(notif => (
+                        <div
+                          key={notif.id}
+                          style={{
+                            ...styles.notifItem,
+                            backgroundColor: notif.is_read ? 'transparent' : 'rgba(0, 242, 254, 0.04)',
+                            borderLeft: notif.is_read ? '3px solid transparent' : '3px solid var(--accent-found)'
+                          }}
+                          onClick={() => handleNotificationClick(notif)}
+                        >
+                          <div style={styles.notifItemTitle}>
+                            <span>🔔 {t('notification.title')}</span>
+                            <span style={styles.notifItemTime}>
+                              {new Date(notif.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                          <p style={styles.notifItemMsg}>{notif.message}</p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Language Selector Dropdown in Banner */}
@@ -531,5 +683,172 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '11px',
     marginLeft: '10px',
     transition: 'all 0.2s ease',
+  },
+  notifContainer: {
+    position: 'relative',
+    zIndex: 1000,
+  },
+  notifBadge: {
+    position: 'absolute',
+    top: '-4px',
+    right: '-4px',
+    backgroundColor: '#ff4a6b',
+    color: '#ffffff',
+    fontSize: '9px',
+    fontWeight: '700',
+    borderRadius: '10px',
+    padding: '1px 5px',
+    minWidth: '14px',
+    textAlign: 'center',
+    border: '1px solid #101422',
+    boxShadow: '0 0 8px rgba(255, 74, 107, 0.6)',
+  },
+  notifDropdown: {
+    position: 'absolute',
+    top: '34px',
+    right: 0,
+    backgroundColor: 'rgba(10, 14, 26, 0.96)',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    borderRadius: '14px',
+    padding: '12px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '10px',
+    width: '320px',
+    maxHeight: '380px',
+    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.6)',
+    overflow: 'hidden',
+  },
+  notifHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: '8px',
+    borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+  },
+  notifTitle: {
+    fontSize: '13px',
+    fontWeight: '700',
+    color: 'var(--text-primary)',
+  },
+  notifClearBtn: {
+    background: 'transparent',
+    border: 'none',
+    color: 'var(--accent-found)',
+    fontSize: '11px',
+    fontWeight: '600',
+    cursor: 'pointer',
+  },
+  notifList: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '6px',
+    overflowY: 'auto',
+    maxHeight: '300px',
+    paddingRight: '2px',
+  },
+  notifEmpty: {
+    padding: '30px 10px',
+    textAlign: 'center',
+    color: 'var(--text-muted)',
+    fontSize: '12px',
+  },
+  notifItem: {
+    padding: '10px 12px',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    border: '1px solid rgba(255, 255, 255, 0.03)',
+    transition: 'all 0.2s ease',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '4px',
+  },
+  notifItemTitle: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    fontSize: '11px',
+    fontWeight: '700',
+    color: 'var(--text-primary)',
+  },
+  notifItemTime: {
+    fontSize: '9px',
+    color: 'var(--text-muted)',
+    fontWeight: '500',
+  },
+  notifItemMsg: {
+    fontSize: '11px',
+    color: 'var(--text-secondary)',
+    lineHeight: '1.4',
+    margin: 0,
+  },
+  toastContainer: {
+    position: 'absolute',
+    top: '20px',
+    left: '50%',
+    transform: 'translateX(-50%)',
+    zIndex: 10000,
+    width: 'calc(100% - 40px)',
+    maxWidth: '440px',
+    backgroundColor: 'rgba(10, 14, 26, 0.95)',
+    border: '1px solid rgba(0, 242, 254, 0.3)',
+    borderRadius: '16px',
+    padding: '14px 18px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '14px',
+    boxShadow: '0 12px 40px rgba(0, 242, 254, 0.25)',
+    cursor: 'pointer',
+    transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+  },
+  toastGlowBadge: {
+    width: '42px',
+    height: '42px',
+    borderRadius: '12px',
+    backgroundColor: 'rgba(0, 242, 254, 0.12)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    border: '1px solid rgba(0, 242, 254, 0.25)',
+    flexShrink: 0,
+  },
+  toastContent: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '3px',
+  },
+  toastHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  toastTitle: {
+    fontSize: '13px',
+    fontWeight: '700',
+    color: 'var(--text-primary)',
+  },
+  toastTime: {
+    fontSize: '10px',
+    color: 'var(--accent-found)',
+    fontWeight: '600',
+  },
+  toastMessage: {
+    fontSize: '11px',
+    color: 'var(--text-secondary)',
+    lineHeight: '1.4',
+    margin: 0,
+  },
+  toastButton: {
+    backgroundColor: 'var(--accent-found)',
+    border: 'none',
+    color: '#0a0e1a',
+    fontSize: '11px',
+    fontWeight: '700',
+    padding: '6px 12px',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    flexShrink: 0,
+    boxShadow: '0 0 10px rgba(0, 242, 254, 0.3)',
   },
 };
