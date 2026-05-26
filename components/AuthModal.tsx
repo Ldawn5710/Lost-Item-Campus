@@ -12,6 +12,7 @@ interface AuthModalProps {
 
 export default function AuthModal({ onAuthSuccess }: AuthModalProps) {
   const { t, language, setLanguage } = useTranslation();
+  const [role, setRole] = useState<'student' | 'guest' | null>(null);
   const [email, setEmail] = useState('');
   const [nickname, setNickname] = useState('');
   const [step, setStep] = useState<1 | 2>(1);
@@ -47,10 +48,20 @@ export default function AuthModal({ onAuthSuccess }: AuthModalProps) {
       return;
     }
 
-    const domain = email.split('@')[1];
-    if (!domain || (!domain.endsWith('.ac.kr') && !domain.endsWith('.edu'))) {
-      setError(t('auth.err_email'));
-      return;
+    if (role === 'student') {
+      const domain = email.split('@')[1];
+      if (!domain || (!domain.endsWith('.ac.kr') && !domain.endsWith('.edu'))) {
+        setError(t('auth.err_email'));
+        return;
+      }
+    } else {
+      // Guest: can be any email domain or standard 9-15 digit phone number
+      const isEmail = email.includes('@');
+      const isPhone = /^\+?[0-9]{9,15}$/.test(email.replace(/[\s-]/g, ''));
+      if (!isEmail && !isPhone) {
+        setError(t('auth.email_guest_helper'));
+        return;
+      }
     }
 
     setLoading(true);
@@ -79,13 +90,17 @@ export default function AuthModal({ onAuthSuccess }: AuthModalProps) {
     setLoading(true);
 
     try {
-      const { name: univName, lat, lng } = getUniversityName(email);
+      const isStudent = role === 'student';
+      const { name: univName, lat, lng } = isStudent
+        ? getUniversityName(email)
+        : { name: t('univ.fallback'), lat: 35.9038, lng: 128.8504 };
+
       const newUser: Profile = {
         id: 'user-' + Math.random().toString(36).substr(2, 9),
         email,
-        nickname,
-        university: univName,
-        is_verified: true,
+        nickname: nickname + (isStudent ? '' : ` (${t('explore.badge_guest')})`),
+        university: isStudent ? univName : t('explore.badge_guest'),
+        is_verified: isStudent,
         created_at: new Date().toISOString()
       };
 
@@ -140,109 +155,159 @@ export default function AuthModal({ onAuthSuccess }: AuthModalProps) {
           )}
         </div>
 
-        <div style={styles.header}>
-          <div style={styles.logoContainer}>
-            <ShieldCheck size={32} color="var(--accent-found)" />
-          </div>
-          <h2 style={styles.title}>{t('auth.title')}</h2>
-          <p style={styles.subtitle}>{t('auth.subtitle')}</p>
-        </div>
+        {role === null ? (
+          <div style={styles.roleSelection}>
+            <div style={styles.header}>
+              <div style={styles.logoContainer}>
+                <ShieldCheck size={32} color="var(--accent-found)" />
+              </div>
+              <h2 style={styles.title}>{t('auth.role_title')}</h2>
+              <p style={styles.subtitle}>{t('auth.role_subtitle')}</p>
+            </div>
+            <div style={styles.roleOptions}>
+              <div
+                style={styles.roleCard}
+                className="role-selection-card"
+                onClick={() => setRole('student')}
+              >
+                <div style={styles.roleCardHeader}>
+                  <ShieldCheck size={20} color="var(--accent-found)" />
+                  <span style={styles.roleCardTitle}>{t('auth.role_student')}</span>
+                </div>
+                <p style={styles.roleCardDesc}>{t('auth.role_student_desc')}</p>
+              </div>
 
-        {error && (
-          <div style={styles.errorAlert}>
-            <AlertCircle size={16} />
-            <span>{error}</span>
-          </div>
-        )}
-
-        {step === 1 ? (
-          <form onSubmit={handleSendOtp} style={styles.form}>
-            <div style={styles.inputGroup}>
-              <label style={styles.label}>{t('auth.nickname')}</label>
-              <div style={styles.inputWrapper}>
-                <input
-                  type="text"
-                  placeholder={t('auth.nickname_placeholder')}
-                  value={nickname}
-                  onChange={(e) => setNickname(e.target.value)}
-                  className="glass-input"
-                  style={styles.input}
-                  disabled={loading}
-                />
+              <div
+                style={styles.roleCard}
+                className="role-selection-card"
+                onClick={() => setRole('guest')}
+              >
+                <div style={styles.roleCardHeader}>
+                  <Globe size={20} color="var(--accent-lost)" />
+                  <span style={styles.roleCardTitle}>{t('auth.role_guest')}</span>
+                </div>
+                <p style={styles.roleCardDesc}>{t('auth.role_guest_desc')}</p>
               </div>
             </div>
-
-            <div style={styles.inputGroup}>
-              <label style={styles.label}>{t('auth.email')}</label>
-              <div style={styles.inputWrapper}>
-                <Mail size={18} style={styles.inputIcon} />
-                <input
-                  type="email"
-                  placeholder={t('auth.email_placeholder')}
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="glass-input"
-                  style={{ ...styles.input, paddingLeft: '40px' }}
-                  disabled={loading}
-                />
-              </div>
-              <p style={styles.helperText}>{t('auth.email_helper')}</p>
-            </div>
-
-            <button
-              type="submit"
-              className="glass-button primary"
-              style={styles.submitBtn}
-              disabled={loading}
-            >
-              {loading ? t('auth.sending_otp') : t('auth.get_otp')}
-              {!loading && <ArrowRight size={18} style={{ marginLeft: '4px' }} />}
-            </button>
-          </form>
+          </div>
         ) : (
-          <form onSubmit={handleVerifyOtp} style={styles.form}>
-            <div style={styles.infoBanner}>
-              <Mail size={16} color="var(--accent-found)" />
-              <div style={styles.infoText}>
-                {t('auth.otp_banner', { email })}
+          <>
+            <div style={styles.header}>
+              <div style={styles.logoContainer}>
+                <ShieldCheck size={32} color="var(--accent-found)" />
               </div>
+              <h2 style={styles.title}>{t('auth.title')}</h2>
+              <p style={styles.subtitle}>{t('auth.subtitle')}</p>
             </div>
 
-            <div style={styles.inputGroup}>
-              <label style={styles.label}>{t('auth.otp_label')}</label>
-              <input
-                type="text"
-                placeholder={t('auth.otp_placeholder')}
-                maxLength={6}
-                value={otp}
-                onChange={(e) => setOtp(e.target.value)}
-                className="glass-input"
-                style={{ ...styles.input, letterSpacing: '4px', textAlign: 'center', fontSize: '18px' }}
-                disabled={loading}
-              />
-            </div>
+            {error && (
+              <div style={styles.errorAlert}>
+                <AlertCircle size={16} />
+                <span>{error}</span>
+              </div>
+            )}
 
-            <div style={styles.buttonRow}>
-              <button
-                type="button"
-                className="glass-button"
-                style={{ flex: 1 }}
-                onClick={() => setStep(1)}
-                disabled={loading}
-              >
-                {t('auth.btn_back')}
-              </button>
-              <button
-                type="submit"
-                className="glass-button primary"
-                style={{ flex: 2 }}
-                disabled={loading}
-              >
-                {loading ? t('auth.verifying') : t('auth.btn_verify')}
-                {!loading && <Check size={18} style={{ marginLeft: '4px' }} />}
-              </button>
-            </div>
-          </form>
+            {step === 1 ? (
+              <form onSubmit={handleSendOtp} style={styles.form}>
+                <div style={styles.inputGroup}>
+                  <label style={styles.label}>{t('auth.nickname')}</label>
+                  <div style={styles.inputWrapper}>
+                    <input
+                      type="text"
+                      placeholder={t('auth.nickname_placeholder')}
+                      value={nickname}
+                      onChange={(e) => setNickname(e.target.value)}
+                      className="glass-input"
+                      style={styles.input}
+                      disabled={loading}
+                    />
+                  </div>
+                </div>
+
+                <div style={styles.inputGroup}>
+                  <label style={styles.label}>{role === 'student' ? t('auth.email') : t('auth.email_guest_placeholder')}</label>
+                  <div style={styles.inputWrapper}>
+                    <Mail size={18} style={styles.inputIcon} />
+                    <input
+                      type="text"
+                      placeholder={role === 'student' ? t('auth.email_placeholder') : t('auth.email_guest_placeholder')}
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="glass-input"
+                      style={{ ...styles.input, paddingLeft: '40px' }}
+                      disabled={loading}
+                    />
+                  </div>
+                  <p style={styles.helperText}>{role === 'student' ? t('auth.email_helper') : t('auth.email_guest_helper')}</p>
+                </div>
+
+                <div style={styles.buttonRow}>
+                  <button
+                    type="button"
+                    className="glass-button"
+                    style={{ flex: 1 }}
+                    onClick={() => { setRole(null); setError(''); }}
+                    disabled={loading}
+                  >
+                    {t('auth.btn_back')}
+                  </button>
+                  <button
+                    type="submit"
+                    className="glass-button primary"
+                    style={{ flex: 2 }}
+                    disabled={loading}
+                  >
+                    {loading ? t('auth.sending_otp') : t('auth.get_otp')}
+                    {!loading && <ArrowRight size={18} style={{ marginLeft: '4px' }} />}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={handleVerifyOtp} style={styles.form}>
+                <div style={styles.infoBanner}>
+                  <Mail size={16} color="var(--accent-found)" />
+                  <div style={styles.infoText}>
+                    {t('auth.otp_banner', { email })}
+                  </div>
+                </div>
+
+                <div style={styles.inputGroup}>
+                  <label style={styles.label}>{t('auth.otp_label')}</label>
+                  <input
+                    type="text"
+                    placeholder={t('auth.otp_placeholder')}
+                    maxLength={6}
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value)}
+                    className="glass-input"
+                    style={{ ...styles.input, letterSpacing: '4px', textAlign: 'center', fontSize: '18px' }}
+                    disabled={loading}
+                  />
+                </div>
+
+                <div style={styles.buttonRow}>
+                  <button
+                    type="button"
+                    className="glass-button"
+                    style={{ flex: 1 }}
+                    onClick={() => setStep(1)}
+                    disabled={loading}
+                  >
+                    {t('auth.btn_back')}
+                  </button>
+                  <button
+                    type="submit"
+                    className="glass-button primary"
+                    style={{ flex: 2 }}
+                    disabled={loading}
+                  >
+                    {loading ? t('auth.verifying') : t('auth.btn_verify')}
+                    {!loading && <Check size={18} style={{ marginLeft: '4px' }} />}
+                  </button>
+                </div>
+              </form>
+            )}
+          </>
         )}
       </div>
     </div>
@@ -416,5 +481,57 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     gap: '12px',
     marginTop: '8px',
+  },
+  roleSelection: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '16px',
+    width: '100%',
+  },
+  roleTitle: {
+    fontSize: '20px',
+    fontWeight: '700',
+    textAlign: 'center',
+    color: 'var(--text-primary)',
+    fontFamily: 'var(--font-accent)',
+  },
+  roleSubtitle: {
+    fontSize: '13px',
+    textAlign: 'center',
+    color: 'var(--text-secondary)',
+    lineHeight: '1.4',
+    marginBottom: '10px',
+  },
+  roleOptions: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '12px',
+  },
+  roleCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    borderRadius: '12px',
+    padding: '16px',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '6px',
+  },
+  roleCardHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+  },
+  roleCardTitle: {
+    fontSize: '14px',
+    fontWeight: '600',
+    color: 'var(--text-primary)',
+  },
+  roleCardDesc: {
+    fontSize: '11px',
+    color: 'var(--text-muted)',
+    lineHeight: '1.4',
+    paddingLeft: '28px',
   },
 };

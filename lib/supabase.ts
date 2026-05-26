@@ -26,8 +26,8 @@ class SimulatedDatabase {
   }
 
   private initDefaultData() {
-    // 1. Initial Profile
-    if (!localStorage.getItem(this.activeUserKey)) {
+    // 1. Initial Profile (Seed default profile if profiles are empty, but do not set active user session)
+    if (!localStorage.getItem(this.profilesKey) || JSON.parse(localStorage.getItem(this.profilesKey) || '[]').length === 0) {
       const defaultUser: Profile = {
         id: 'user-daegu-student-123',
         email: 'hong@daegu.ac.kr',
@@ -36,8 +36,6 @@ class SimulatedDatabase {
         is_verified: true,
         created_at: new Date().toISOString(),
       };
-      localStorage.setItem(this.activeUserKey, JSON.stringify(defaultUser));
-      
       const profiles = [defaultUser];
       localStorage.setItem(this.profilesKey, JSON.stringify(profiles));
     }

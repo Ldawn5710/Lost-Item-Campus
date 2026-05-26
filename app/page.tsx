@@ -50,21 +50,25 @@ export default function Home() {
   // Load User session & Initial Items on Mount
   useEffect(() => {
     const initSession = async () => {
-      let user = db.getActiveUser();
-      // Force session to always default to Daegu University (overwriting any previous SNU test sessions)
-      if (!user || user.email.includes('snu.ac.kr') || user.university.includes('서울') || user.university.includes('Seoul')) {
-        const mockUser = {
-          id: 'user-mock-tester',
-          email: 'test@daegu.ac.kr',
-          nickname: '캠퍼스 테스터',
-          university: '대구대학교',
-          is_verified: true,
-          created_at: new Date().toISOString()
-        };
-        await db.setActiveUser(mockUser);
-        user = mockUser;
+      const user = db.getActiveUser();
+      if (user) {
+        let lat = 35.9038;
+        let lng = 128.8504;
+        if (user.university.includes('서울') || user.university.includes('Seoul') || user.email.includes('snu.ac.kr')) {
+          lat = 37.459882;
+          lng = 126.951905;
+        } else if (user.university.includes('KAIST') || user.email.includes('kaist.ac.kr')) {
+          lat = 36.3721;
+          lng = 127.3604;
+        } else if (user.university.includes('고려') || user.university.includes('Korea') || user.email.includes('korea.ac.kr')) {
+          lat = 37.5894;
+          lng = 127.0326;
+        } else if (user.university.includes('연세') || user.university.includes('Yonsei') || user.email.includes('yonsei.ac.kr')) {
+          lat = 37.5657;
+          lng = 126.9385;
+        }
+        handleAuthSuccess(user, { lat, lng });
       }
-      handleAuthSuccess(user, { lat: 35.9038, lng: 128.8504 });
     };
     initSession();
   }, []);

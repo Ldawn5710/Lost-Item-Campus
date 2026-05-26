@@ -200,17 +200,28 @@ export default function ChatPanel({
       )}
 
       {/* C. Safety Alert Banner (PRD 4.4) */}
-      {showSafetyAlert && (
-        <div style={styles.safetyAlert}>
-          <ShieldAlert size={16} color="var(--accent-lost)" style={{ flexShrink: 0 }} />
-          <div style={styles.safetyText}>
-            {t('chat.safety_alert')}
+      {showSafetyAlert && (() => {
+        const isGuestInRoom = activeUser?.is_verified === false || room?.opponent?.is_verified === false;
+        return (
+          <div style={{
+            ...styles.safetyAlert,
+            backgroundColor: isGuestInRoom ? 'rgba(255, 74, 107, 0.12)' : 'rgba(255, 74, 107, 0.06)',
+            borderBottom: isGuestInRoom ? '1px solid rgba(255, 74, 107, 0.3)' : '1px solid rgba(255, 74, 107, 0.15)',
+          }}>
+            <ShieldAlert size={18} color="var(--accent-lost)" style={{ flexShrink: 0 }} />
+            <div style={{
+              ...styles.safetyText,
+              color: isGuestInRoom ? '#ffcdd2' : 'var(--text-secondary)',
+              fontWeight: isGuestInRoom ? '600' : 'normal',
+            }}>
+              {isGuestInRoom ? t('chat.safety_guest_warning') : t('chat.safety_alert')}
+            </div>
+            <button style={styles.alertClose} onClick={() => setShowSafetyAlert(false)}>
+              <X size={14} />
+            </button>
           </div>
-          <button style={styles.alertClose} onClick={() => setShowSafetyAlert(false)}>
-            <X size={14} />
-          </button>
-        </div>
-      )}
+        );
+      })()}
 
       {/* D. Messages List */}
       <div style={styles.messagesList}>
