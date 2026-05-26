@@ -105,7 +105,7 @@ class SimulatedDatabase {
       localStorage.removeItem(this.activeUserKey);
     } else {
       localStorage.setItem(this.activeUserKey, JSON.stringify(user));
-      
+
       if (isSupabaseConfigured && supabase) {
         await supabase.from('profiles').upsert(user);
       } else {
@@ -232,13 +232,13 @@ class SimulatedDatabase {
     const filtered = items.filter(i => i.id !== itemId);
     if (filtered.length !== items.length) {
       localStorage.setItem(this.itemsKey, JSON.stringify(filtered));
-      
+
       // Clean up linked chat rooms & messages
       const roomsStr = localStorage.getItem(this.chatRoomsKey) || '[]';
       const rooms: ChatRoom[] = JSON.parse(roomsStr);
       const filteredRooms = rooms.filter(r => r.item_id !== itemId);
       localStorage.setItem(this.chatRoomsKey, JSON.stringify(filteredRooms));
-      
+
       const deletedRoomIds = rooms.filter(r => r.item_id === itemId).map(r => r.id);
       if (deletedRoomIds.length > 0) {
         const messagesStr = localStorage.getItem(this.chatMessagesKey) || '[]';
@@ -309,7 +309,7 @@ class SimulatedDatabase {
         const item = itemsMap.get(room.item_id);
         const opponentId = room.buyer_id === userId ? room.seller_id : room.buyer_id;
         let opponent = profilesMap.get(opponentId);
-        
+
         if (!opponent) {
           opponent = {
             id: opponentId,
@@ -341,7 +341,7 @@ class SimulatedDatabase {
         const item = items.find(i => i.id === room.item_id);
         const opponentId = room.buyer_id === userId ? room.seller_id : room.buyer_id;
         let opponent = profiles.find(p => p.id === opponentId);
-        
+
         if (!opponent) {
           opponent = {
             id: opponentId,
@@ -386,7 +386,7 @@ class SimulatedDatabase {
         .eq('item_id', itemId)
         .eq('buyer_id', buyerId)
         .eq('seller_id', sellerId);
-      
+
       if (!findError && existing && existing.length > 0) {
         return existing[0] as ChatRoom;
       }
@@ -426,7 +426,7 @@ class SimulatedDatabase {
 
     // Local Database logic
     const rooms: ChatRoom[] = JSON.parse(localStorage.getItem(this.chatRoomsKey) || '[]');
-    
+
     // Check if room already exists
     const existing = rooms.find(r => r.item_id === itemId && r.buyer_id === buyerId && r.seller_id === sellerId);
     if (existing) return existing;
@@ -440,7 +440,7 @@ class SimulatedDatabase {
     };
     rooms.unshift(newRoom);
     localStorage.setItem(this.chatRoomsKey, JSON.stringify(rooms));
-    
+
     const lang = (typeof window !== 'undefined' ? localStorage.getItem('language') : 'ko') || 'ko';
     const welcomeMsg = this.getWelcomeMessage(lang);
 
@@ -572,7 +572,7 @@ class SimulatedDatabase {
       const notifs: Notification[] = JSON.parse(notifsStr);
       notifs.unshift(newNotif);
       localStorage.setItem(this.notificationsKey, JSON.stringify(notifs));
-      
+
       // Dispatch custom real-time window event for page live listeners
       window.dispatchEvent(new CustomEvent('safe_campus_new_notification', { detail: newNotif }));
     }
@@ -602,10 +602,10 @@ class SimulatedDatabase {
   async checkAndGenerateMatches(newItem: Item): Promise<void> {
     try {
       const allItems = await this.getItems();
-      
+
       const wordsOf = (text: string) => {
         return text.toLowerCase()
-          .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"")
+          .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "")
           .split(/\s+/)
           .filter(word => word.length >= 2);
       };
@@ -623,7 +623,7 @@ class SimulatedDatabase {
         const otherWords = wordsOf(otherItem.title);
         // Check if there is a common keyword (e.g. "버즈", "아이폰", "지갑")
         const hasKeywordOverlap = newWords.some(w => otherWords.includes(w));
-        
+
         if (hasKeywordOverlap) {
           if (newItem.type === 'lost') {
             // New item is lost -> matching is an existing found item -> notify owner of lost (active user)
