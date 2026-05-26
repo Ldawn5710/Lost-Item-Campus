@@ -87,7 +87,7 @@ export default function BottomSheet({
     e.stopPropagation();
     setZoomScale(1);
   };
-  
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
@@ -232,7 +232,7 @@ export default function BottomSheet({
         targetHeight = Math.round((height * max_width) / width);
         targetWidth = max_width;
       }
-      
+
       const resizeCanvas = document.createElement('canvas');
       resizeCanvas.width = targetWidth;
       resizeCanvas.height = targetHeight;
@@ -369,10 +369,10 @@ export default function BottomSheet({
                     </div>
                     <div style={styles.detailsRightCol}>
                       <div style={styles.detailsImageWrapper}>
-                        <img 
-                          src={selectedItem.image_url} 
-                          alt={selectedItem.title} 
-                          style={styles.detailsImage} 
+                        <img
+                          src={selectedItem.image_url}
+                          alt={selectedItem.title}
+                          style={styles.detailsImage}
                           onClick={handleImageClick}
                         />
                       </div>
@@ -747,19 +747,7 @@ export default function BottomSheet({
                         <div style={styles.inputGroup}>
                           <label style={styles.formLabel}>{t('reg.image_label')}</label>
                           <div style={styles.cameraContainer}>
-                            {cameraActive ? (
-                              <div style={styles.videoWrapper}>
-                                <video ref={videoRef} autoPlay playsInline style={styles.videoStream} />
-                                <div style={styles.videoControls}>
-                                  <button type="button" onClick={capturePhoto} style={styles.captureBtn}>
-                                    {t('reg.camera_snap')}
-                                  </button>
-                                  <button type="button" onClick={stopCamera} style={styles.stopCameraBtn}>
-                                    {t('reg.camera_stop')}
-                                  </button>
-                                </div>
-                              </div>
-                            ) : regImage ? (
+                            {regImage ? (
                               <div style={styles.imagePreviewContainer}>
                                 <img src={regImage} alt="Preview" style={styles.imagePreview} />
                                 <button type="button" onClick={() => setRegImage('')} style={styles.deleteImageBtn}>
@@ -768,12 +756,24 @@ export default function BottomSheet({
                               </div>
                             ) : (
                               <div style={styles.cameraPlaceholder}>
-                                <button type="button" onClick={startCamera} style={styles.cameraBtn}>
+                                <label style={{ ...styles.cameraBtn, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                  <input 
+                                    type="file" 
+                                    accept="image/*" 
+                                    capture="environment" 
+                                    onChange={handleImageChange} 
+                                    style={{ display: 'none' }} 
+                                  />
                                   {t('reg.camera_start')}
-                                </button>
-                                <label style={styles.fileUploadLabel}>
-                                  <input type="file" accept="image/*" onChange={handleImageChange} style={{ display: 'none' }} />
-                                  📁 파일 선택
+                                </label>
+                                <label style={{ ...styles.fileUploadLabel, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                  <input 
+                                    type="file" 
+                                    accept="image/*" 
+                                    onChange={handleImageChange} 
+                                    style={{ display: 'none' }} 
+                                  />
+                                  📁 {language === 'ko' ? '앨범에서 선택' : language === 'vi' ? 'Chọn từ thư viện' : 'Choose from Gallery'}
                                 </label>
                               </div>
                             )}
