@@ -14,6 +14,14 @@ export const translations: Record<Language, Record<string, string>> = {
     'chat.leave_confirm': '정말 이 채팅방을 나가시겠습니까? 대화 내용이 모두 삭제됩니다.',
     
     // AuthModal
+    'auth.role_title': '사용자 유형 선택',
+    'auth.role_subtitle': '서비스 이용을 위해 회원 유형을 선택해 주세요.',
+    'auth.role_student': '교내 구성원 (학생/교직원)',
+    'auth.role_student_desc': '학교 이메일(.ac.kr / .edu) 인증을 통해 모든 기능을 제한 없이 이용할 수 있습니다.',
+    'auth.role_guest': '일반 방문자 / 외부인',
+    'auth.role_guest_desc': '일반 이메일로 가입하며, 물품 등록 제한(24시간 내 최대 2개) 및 채팅 시 안전 주의 경고가 표시됩니다.',
+    'auth.email_guest_placeholder': '이메일 주소 또는 전화번호 입력',
+    'auth.email_guest_helper': '* 일반 이메일(Gmail, Naver 등) 또는 휴대전화 번호를 입력해 주세요.',
     'auth.title': '안심 캠퍼스 가입',
     'auth.subtitle': '대학 구성원 전용 유실물 매칭 & 도보 안내 서비스',
     'auth.nickname': '닉네임',
@@ -455,7 +463,7 @@ export const translations: Record<Language, Record<string, string>> = {
     // Categories
     'category.electronics': 'Thiết bị điện tử',
     'category.wallet': 'Ví/Thẻ',
-    'category.bag': 'Túi xách/Bao lô',
+    'category.bag': 'Túi xách/Ba lô',
     'category.clothing': 'Quần áo',
     'category.cosmetics': 'Mỹ phẩm',
     'category.others': 'Khác',
