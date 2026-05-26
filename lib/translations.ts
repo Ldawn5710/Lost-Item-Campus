@@ -14,6 +14,14 @@ export const translations: Record<Language, Record<string, string>> = {
     'chat.leave_confirm': '정말 이 채팅방을 나가시겠습니까? 대화 내용이 모두 삭제됩니다.',
     
     // AuthModal
+    'auth.role_title': '사용자 유형 선택',
+    'auth.role_subtitle': '서비스 이용을 위해 회원 유형을 선택해 주세요.',
+    'auth.role_student': '교내 구성원 (학생/교직원)',
+    'auth.role_student_desc': '학교 이메일(.ac.kr / .edu) 인증을 통해 모든 기능을 제한 없이 이용할 수 있습니다.',
+    'auth.role_guest': '일반 방문자 / 외부인',
+    'auth.role_guest_desc': '일반 이메일로 가입하며, 물품 등록 제한(24시간 내 최대 2개) 및 대 diện 대화 시 안전 주의 경고가 표시됩니다.',
+    'auth.email_guest_placeholder': '이메일 주소 또는 전화번호 입력',
+    'auth.email_guest_helper': '* 일반 이메일(Gmail, Naver 등) 또는 휴대전화 번호를 입력해 주세요.',
     'auth.title': '안심 캠퍼스 가입',
     'auth.subtitle': '대학 구성원 전용 유실물 매칭 & 도보 안내 서비스',
     'auth.nickname': '닉네임',
@@ -65,6 +73,8 @@ export const translations: Record<Language, Record<string, string>> = {
     'explore.pill_found': '🔵 습득물',
     'explore.badge_lost': '분실',
     'explore.badge_found': '습득',
+    'explore.badge_guest': '외부인 (미인증)',
+    'explore.badge_verified': '인증됨',
     'explore.no_items': '해당하는 유실물이 없습니다.',
 
     // BottomSheet - Details
@@ -98,6 +108,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'reg.desc_placeholder': '물건의 생김새, 브랜드, 특징, 보관 여부를 적어주세요.',
     'reg.reset_coords': '위치 재설정',
     'reg.submit_btn': '등록 완료하기',
+    'reg.err_guest_limit': '외부인 계정은 24시간 내 최대 2개까지만 등록할 수 있습니다.',
     'reg.err_title': '물건명을 입력해 주세요.',
     'reg.image_label': '사진 첨부 (실시간 촬영 / 파일 선택)',
     'reg.camera_start': '📸 실시간 카메라 촬영',
@@ -115,6 +126,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'chat.meetup_btn': '약속 장소 지정',
     'chat.safety_alert': '상호 예의를 지켜주세요. 대면 전달 시 가급적 학교 내 유동 인구가 많은 장소(예: 중앙도서관 로비, 학생회관 앞 등)를 적극 권장합니다.',
     'chat.input_placeholder': '메시지를 입력하세요...',
+    'chat.safety_guest_warning': '⚠️ [안전 경고] 외부인(미인증) 사용자와 대화 중입니다. 사기 피해 예방을 위해 사례금 등의 명목으로 선입금을 절대 금지하며, 물건 전달은 낮 시간대에 교내 CCTV가 있는 공공장소나 경비실 등 안전한 곳에서 진행하시기 바랍니다.',
     'chat.start_nav': '동선 안내 시작',
     
     // RouteNavigator
@@ -172,6 +184,14 @@ export const translations: Record<Language, Record<string, string>> = {
     'chat.leave_confirm': 'Are you sure you want to leave this chat? All message history will be deleted.',
 
     // AuthModal
+    'auth.role_title': 'Select User Type',
+    'auth.role_subtitle': 'Please select your membership type to proceed.',
+    'auth.role_student': 'Verified Campus User',
+    'auth.role_student_desc': 'Verify with school email (.ac.kr / .edu) for full privileges with no restrictions.',
+    'auth.role_guest': 'Guest User / External',
+    'auth.role_guest_desc': 'Log in with standard email. Posting is limited to 2 items per 24h, and safety alerts are shown in chats.',
+    'auth.email_guest_placeholder': 'Email address or phone number',
+    'auth.email_guest_helper': '* Enter a standard email (Gmail, Outlook, etc.) or a phone number.',
     'auth.title': 'Join Safe Campus',
     'auth.subtitle': 'Exclusively for college students - Lost & Found matching & walking navigation',
     'auth.nickname': 'Nickname',
@@ -223,6 +243,8 @@ export const translations: Record<Language, Record<string, string>> = {
     'explore.pill_found': '🔵 Found',
     'explore.badge_lost': 'Lost',
     'explore.badge_found': 'Found',
+    'explore.badge_guest': 'Guest (Unverified)',
+    'explore.badge_verified': 'Verified Student',
     'explore.no_items': 'No matching lost/found items found.',
 
     // BottomSheet - Details
@@ -256,6 +278,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'reg.desc_placeholder': 'Describe the appearance, brand, special features, or storage location.',
     'reg.reset_coords': 'Reset Location',
     'reg.submit_btn': 'Complete Registration',
+    'reg.err_guest_limit': 'Guest accounts can report a maximum of 2 items per 24 hours.',
     'reg.err_title': 'Please enter the item name.',
     'reg.image_label': 'Attach Photo (Take Live / Choose File)',
     'reg.camera_start': '📸 Take Live Photo',
@@ -273,6 +296,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'chat.meetup_btn': 'Set Meetup',
     'chat.safety_alert': 'Please remain respectful. For face-to-face handovers, we highly recommend public campus locations with high foot traffic (e.g., Student Center Lobby, in front of the Central Library).',
     'chat.input_placeholder': 'Type a message...',
+    'chat.safety_guest_warning': '⚠️ [Safety Warning] You are chatting with an external guest (unverified). To ensure safety, NEVER send money or fees in advance. Meet only in public campus areas with security cameras or campus guard posts during daylight hours.',
     'chat.start_nav': 'Start Navigation',
 
     // RouteNavigator
@@ -330,6 +354,14 @@ export const translations: Record<Language, Record<string, string>> = {
     'chat.leave_confirm': 'Bạn có chắc muốn rời khỏi cuộc trò chuyện? Lịch sử tin nhắn sẽ bị xóa.',
 
     // AuthModal
+    'auth.role_title': 'Chọn nhóm người dùng',
+    'auth.role_subtitle': 'Vui lòng chọn loại thành viên của bạn để tiếp tục.',
+    'auth.role_student': 'Sinh viên trong trường (Xác thực)',
+    'auth.role_student_desc': 'Xác thực bằng Email trường (.ac.kr / .edu) để sử dụng toàn bộ tính năng và không giới hạn.',
+    'auth.role_guest': 'Khách vãng lai / Người ngoài',
+    'auth.role_guest_desc': 'Đăng nhập bằng email thường. Giới hạn đăng tối đa 2 ghim/24h và hiển thị cảnh báo an toàn khi chat.',
+    'auth.email_guest_placeholder': 'Nhập địa chỉ email hoặc số điện thoại',
+    'auth.email_guest_helper': '* Nhập email thông thường (Gmail, Yahoo...) hoặc số điện thoại để đăng nhập.',
     'auth.title': 'Đăng ký Safe Campus',
     'auth.subtitle': 'Dịch vụ đối chiếu đồ thất lạc & chỉ đường đi bộ dành riêng cho sinh viên',
     'auth.nickname': 'Biệt danh',
@@ -381,6 +413,8 @@ export const translations: Record<Language, Record<string, string>> = {
     'explore.pill_found': '🔵 Đồ nhặt được',
     'explore.badge_lost': 'Thất lạc',
     'explore.badge_found': 'Nhặt được',
+    'explore.badge_guest': 'Khách vãng lai (Chưa xác thực)',
+    'explore.badge_verified': 'Sinh viên trường',
     'explore.no_items': 'Không tìm thấy đồ thất lạc phù hợp.',
 
     // BottomSheet - Details
@@ -414,6 +448,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'reg.desc_placeholder': 'Mô tả hình dáng, nhãn hiệu, đặc điểm nổi bật hoặc nơi đang cất giữ.',
     'reg.reset_coords': 'Đặt lại vị trí',
     'reg.submit_btn': 'Hoàn tất đăng ký',
+    'reg.err_guest_limit': 'Tài khoản khách chỉ được đăng tối đa 2 ghim trong vòng 24 giờ.',
     'reg.err_title': 'Vui lòng nhập tên đồ vật.',
     'reg.image_label': 'Đính kèm ảnh (Chụp trực tiếp / Chọn tệp)',
     'reg.camera_start': '📸 Chụp ảnh trực tiếp',
@@ -431,6 +466,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'chat.meetup_btn': 'Đặt điểm hẹn',
     'chat.safety_alert': 'Vui lòng lịch sự tôn trọng nhau. Khi gặp mặt trực tiếp, chúng tôi khuyên bạn nên chọn những địa điểm công cộng đông người qua lại trong trường (VD: Sảnh Nhà văn hóa sinh viên, trước Thư viện trung tâm).',
     'chat.input_placeholder': 'Nhập tin nhắn...',
+    'chat.safety_guest_warning': '⚠️ [Cảnh báo an toàn] Bạn đang trò chuyện với người dùng vãng lai (ngoài trường). Để đảm bảo an toàn, tuyệt đối không chuyển tiền trước (tiền hậu tạ) và chỉ hẹn gặp mặt nhận lại đồ tại các địa điểm công cộng có camera hoặc phòng bảo vệ của trường (Sảnh chính, Văn phòng khoa, Phòng bảo vệ cổng trường).',
     'chat.start_nav': 'Bắt đầu hướng dẫn',
 
     // RouteNavigator
