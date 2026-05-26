@@ -49,3 +49,14 @@ export interface ChatMessage {
   created_at: string;
   is_system?: boolean; // System safety messages, route activations, etc.
 }
+
+export interface Notification {
+  id: string;
+  user_id: string;      // The owner of the lost item who receives this alert
+  type: 'match';
+  title: string;
+  message: string;
+  item_id: string;      // The matching item's ID to navigate to
+  is_read: boolean;
+  created_at: string;
+}

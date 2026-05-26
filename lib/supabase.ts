@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { Profile, Item, ChatRoom, ChatMessage, ItemType, ItemStatus } from './types';
+import { Profile, Item, ChatRoom, ChatMessage, ItemType, ItemStatus, Notification } from './types';
 
 // Detect if Supabase environment variables are available (for production)
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -18,6 +18,7 @@ class SimulatedDatabase {
   private chatRoomsKey = 'safe_campus_chat_rooms';
   private chatMessagesKey = 'safe_campus_chat_messages';
   private activeUserKey = 'safe_campus_active_user';
+  private notificationsKey = 'safe_campus_notifications';
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -156,6 +157,8 @@ class SimulatedDatabase {
       updated_at: new Date().toISOString(),
     };
 
+    let savedItem = newItem;
+
     if (isSupabaseConfigured && supabase) {
       // Ensure active user's profile exists in Supabase to avoid foreign key violations!
       const activeUser = this.getActiveUser();
@@ -171,15 +174,21 @@ class SimulatedDatabase {
       if (error) {
         console.error("Error saving item in Supabase, saving locally...", error);
       } else if (data) {
-        return data as Item;
+        savedItem = data as Item;
       }
     }
 
-    // Local Fallback
-    const items = await this.getItems();
-    items.unshift(newItem);
-    localStorage.setItem(this.itemsKey, JSON.stringify(items));
-    return newItem;
+    if (savedItem === newItem) {
+      // Local Fallback
+      const items = await this.getItems();
+      items.unshift(newItem);
+      localStorage.setItem(this.itemsKey, JSON.stringify(items));
+    }
+
+    // Trigger match checker asynchronously
+    this.checkAndGenerateMatches(savedItem);
+
+    return savedItem;
   }
 
   async updateItemStatus(itemId: string, status: ItemStatus): Promise<Item | null> {
@@ -542,6 +551,108 @@ class SimulatedDatabase {
     messages.push(newMessage);
     localStorage.setItem(this.chatMessagesKey, JSON.stringify(messages));
     return newMessage;
+  }
+
+  // Notifications Storage & Retrievals
+  async getNotifications(userId: string): Promise<Notification[]> {
+    if (typeof window === 'undefined') return [];
+    const notifsStr = localStorage.getItem(this.notificationsKey) || '[]';
+    const notifs: Notification[] = JSON.parse(notifsStr);
+    return notifs
+      .filter(n => n.user_id === userId)
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  }
+
+  async saveNotification(notif: Omit<Notification, 'id' | 'created_at'>): Promise<Notification> {
+    const newNotif: Notification = {
+      ...notif,
+      id: 'notif-' + Math.random().toString(36).substr(2, 9),
+      created_at: new Date().toISOString()
+    };
+    if (typeof window !== 'undefined') {
+      const notifsStr = localStorage.getItem(this.notificationsKey) || '[]';
+      const notifs: Notification[] = JSON.parse(notifsStr);
+      notifs.unshift(newNotif);
+      localStorage.setItem(this.notificationsKey, JSON.stringify(notifs));
+      
+      // Dispatch custom real-time window event for page live listeners
+      window.dispatchEvent(new CustomEvent('safe_campus_new_notification', { detail: newNotif }));
+    }
+    return newNotif;
+  }
+
+  async markNotificationAsRead(notifId: string): Promise<void> {
+    if (typeof window === 'undefined') return;
+    const notifsStr = localStorage.getItem(this.notificationsKey) || '[]';
+    const notifs: Notification[] = JSON.parse(notifsStr);
+    const index = notifs.findIndex(n => n.id === notifId);
+    if (index !== -1) {
+      notifs[index].is_read = true;
+      localStorage.setItem(this.notificationsKey, JSON.stringify(notifs));
+    }
+  }
+
+  async clearNotifications(userId: string): Promise<void> {
+    if (typeof window === 'undefined') return;
+    const notifsStr = localStorage.getItem(this.notificationsKey) || '[]';
+    const notifs: Notification[] = JSON.parse(notifsStr);
+    const filtered = notifs.filter(n => n.user_id !== userId);
+    localStorage.setItem(this.notificationsKey, JSON.stringify(filtered));
+  }
+
+  // Similar item smart matcher engine
+  async checkAndGenerateMatches(newItem: Item): Promise<void> {
+    try {
+      const allItems = await this.getItems();
+      
+      const wordsOf = (text: string) => {
+        return text.toLowerCase()
+          .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"")
+          .split(/\s+/)
+          .filter(word => word.length >= 2);
+      };
+
+      const newWords = wordsOf(newItem.title);
+      if (newWords.length === 0) return;
+
+      for (const otherItem of allItems) {
+        if (otherItem.id === newItem.id) continue;
+        if (otherItem.status === 'resolved') continue;
+        if (otherItem.type === newItem.type) continue; // Opposite types only
+        if (otherItem.category !== newItem.category) continue; // Same category only
+        if (otherItem.user_id === newItem.user_id) continue; // Different owners
+
+        const otherWords = wordsOf(otherItem.title);
+        // Check if there is a common keyword (e.g. "버즈", "아이폰", "지갑")
+        const hasKeywordOverlap = newWords.some(w => otherWords.includes(w));
+        
+        if (hasKeywordOverlap) {
+          if (newItem.type === 'lost') {
+            // New item is lost -> matching is an existing found item -> notify owner of lost (active user)
+            await this.saveNotification({
+              user_id: newItem.user_id,
+              type: 'match',
+              title: '유사 물품 매칭 알림',
+              message: `등록하신 분실물 '${newItem.title}'과(와) 유사한 습득물 '${otherItem.title}'이(가) 등록되어 있습니다. 확인해 보세요!`,
+              item_id: otherItem.id,
+              is_read: false
+            });
+          } else {
+            // New item is found -> matching is an existing lost item -> notify owner of the lost item
+            await this.saveNotification({
+              user_id: otherItem.user_id,
+              type: 'match',
+              title: '유사 물품 매칭 알림',
+              message: `등록하신 분실물 '${otherItem.title}'과(와) 유사한 습득물 '${newItem.title}'이(가) 방금 등록되었습니다!`,
+              item_id: newItem.id,
+              is_read: false
+            });
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Error in checkAndGenerateMatches:", err);
+    }
   }
 }
 

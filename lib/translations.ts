@@ -166,6 +166,13 @@ export const translations: Record<Language, Record<string, string>> = {
     'reply.3': '감사합니다! 학생회관 쪽에서 만나면 좋을 것 같아요.',
     'reply.4': '도착하시면 말씀 부탁드려요!',
     'reply.5': '우와 정말 다행이네요! 안전하게 만나서 받겠습니다.',
+
+    // Match Notifications
+    'common.notifications': '알림',
+    'notification.title': '유사 물품 매칭 알림',
+    'notification.empty': '새로운 알림이 없습니다.',
+    'notification.clear': '모두 지우기',
+    'notification.toast_click': '확인하기',
   },
   en: {
     // Meta / Common
@@ -324,6 +331,13 @@ export const translations: Record<Language, Record<string, string>> = {
     'reply.3': 'Thank you! It would be great to meet near the Student Center.',
     'reply.4': 'Please let me know when you arrive!',
     'reply.5': 'Wow, that is such a relief! I will meet you safely.',
+
+    // Match Notifications
+    'common.notifications': 'Notifications',
+    'notification.title': 'Smart Match Alert',
+    'notification.empty': 'No new notifications.',
+    'notification.clear': 'Clear All',
+    'notification.toast_click': 'View',
   },
   vi: {
     // Meta / Common
@@ -482,5 +496,12 @@ export const translations: Record<Language, Record<string, string>> = {
     'reply.3': 'Cảm ơn bạn! Gặp nhau ở khu vực sảnh hội sinh viên được không ạ.',
     'reply.4': 'Khi nào đến nơi bạn nhắn mình nhé!',
     'reply.5': 'Trời ơi may quá! Mình sẽ hẹn gặp nhận đồ an toàn.',
+
+    // Match Notifications
+    'common.notifications': 'Thông báo',
+    'notification.title': 'Thông báo Khớp đồ',
+    'notification.empty': 'Không có thông báo mới.',
+    'notification.clear': 'Xóa tất cả',
+    'notification.toast_click': 'Xem chi tiết',
   },
 };
