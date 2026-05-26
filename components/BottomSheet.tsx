@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { Search, Filter, PlusCircle, MessageSquare, MapPin, Calendar, Tag, FileText, ArrowRight, CheckCircle2, ChevronUp, ChevronDown, ZoomIn, ZoomOut, X, RefreshCw } from 'lucide-react';
 import { Item, ItemType, ItemStatus, Profile } from '../lib/types';
 import { useTranslation } from '../lib/LanguageContext';
+import { db } from '../lib/supabase';
 
 interface BottomSheetProps {
   items: Item[];
@@ -292,6 +293,19 @@ export default function BottomSheet({
 
     if (!registrationCoords) return;
 
+    // Guest spam protection check (max 2 posts per 24 hours)
+    if (activeUser && !activeUser.is_verified) {
+      const now = Date.now();
+      const past24Hours = now - 24 * 60 * 60 * 1000;
+      const guestItemsLast24h = items.filter(item => {
+        return item.user_id === activeUser.id && new Date(item.created_at || item.occurred_at).getTime() > past24Hours;
+      });
+      if (guestItemsLast24h.length >= 2) {
+        alert(t('reg.err_guest_limit'));
+        return;
+      }
+    }
+
     onRegisterItem({
       user_id: activeUser?.id || 'anonymous',
       type: regType,
@@ -317,6 +331,9 @@ export default function BottomSheet({
   };
 
   const activeRecommend = selectedItem ? getRecommendation(selectedItem) : null;
+  // Determine creator and verification status for selected item
+  const creator = selectedItem ? db.getProfilesSync().find(p => p.id === selectedItem.user_id) : null;
+  const isCreatorVerified = creator ? creator.is_verified : true;
 
   return (
     <div style={{
@@ -329,23 +346,32 @@ export default function BottomSheet({
         <span style={styles.handleTitle}>{t('tabs.dashboard')}</span>
       </div>
 
-      {isOpen && (
+      {isOpen ? (
         <div style={styles.content}>
-          {/* Detailed Item Card View Overlay */}
           {selectedItem ? (
             <div style={styles.detailsView}>
               <div style={styles.detailsHeader}>
                 <button className="glass-button" style={styles.backBtn} onClick={() => onSelectItem(null)}>
                   {t('common.back')}
                 </button>
-                <span style={{
-                  ...styles.badge,
-                  backgroundColor: selectedItem.type === 'lost' ? 'rgba(255, 74, 107, 0.2)' : 'rgba(0, 242, 254, 0.2)',
-                  color: selectedItem.type === 'lost' ? 'var(--accent-lost)' : 'var(--accent-found)',
-                  border: `1px solid ${selectedItem.type === 'lost' ? 'var(--accent-lost)' : 'var(--accent-found)'}`
-                }}>
-                  {selectedItem.type === 'lost' ? t('details.lost_badge') : t('details.found_badge')}
-                </span>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <span style={{
+                    ...styles.badge,
+                    backgroundColor: selectedItem?.type === 'lost' ? 'rgba(255, 74, 107, 0.2)' : 'rgba(0, 242, 254, 0.2)',
+                    color: selectedItem?.type === 'lost' ? 'var(--accent-lost)' : 'var(--accent-found)',
+                    border: `1px solid ${selectedItem?.type === 'lost' ? 'var(--accent-lost)' : 'var(--accent-found)'}`
+                  }}>
+                    {selectedItem?.type === 'lost' ? t('details.lost_badge') : t('details.found_badge')}
+                  </span>
+                  <span style={{
+                    ...styles.badge,
+                    backgroundColor: isCreatorVerified ? 'rgba(0, 242, 254, 0.15)' : 'rgba(255, 74, 107, 0.15)',
+                    color: isCreatorVerified ? 'var(--accent-found)' : 'var(--accent-lost)',
+                    border: `1px solid ${isCreatorVerified ? 'var(--accent-found)' : 'var(--accent-lost)'}`
+                  }}>
+                    {isCreatorVerified ? t('explore.badge_verified') : t('explore.badge_guest')}
+                  </span>
+                </div>
               </div>
 
               <div style={styles.detailsScroll}>
@@ -593,49 +619,62 @@ export default function BottomSheet({
                         <p>{t('explore.no_items')}</p>
                       </div>
                     ) : (
-                      filteredItems.map(item => (
-                        <div
-                          key={item.id}
-                          style={styles.listItem}
-                          className="glass-panel"
-                          onClick={() => onSelectItem(item)}
-                        >
-                          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                            {/* Left: Info + Photo directly to the right of text */}
-                            <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flex: 1, minWidth: 0 }}>
-                              {/* Text Info */}
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: 0 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                  <span style={{
-                                    ...styles.badgeSmall,
-                                    backgroundColor: item.type === 'lost' ? 'rgba(255, 74, 107, 0.15)' : 'rgba(0, 242, 254, 0.15)',
-                                    color: item.type === 'lost' ? 'var(--accent-lost)' : 'var(--accent-found)'
-                                  }}>
-                                    {item.type === 'lost' ? t('explore.badge_lost') : t('explore.badge_found')}
-                                  </span>
+                      filteredItems.map(item => {
+                        const creator = db.getProfilesSync().find(p => p.id === item.user_id);
+                        const isCreatorVerified = creator ? creator.is_verified : true;
+
+                        return (
+                          <div
+                            key={item.id}
+                            style={styles.listItem}
+                            className="glass-panel"
+                            onClick={() => onSelectItem(item)}
+                          >
+                            <div style={{ display: 'flex', gap: '12px', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                              {/* Left: Info + Photo directly to the right of text */}
+                              <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flex: 1, minWidth: 0 }}>
+                                {/* Text Info */}
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: 0 }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <span style={{
+                                      ...styles.badgeSmall,
+                                      backgroundColor: item.type === 'lost' ? 'rgba(255, 74, 107, 0.15)' : 'rgba(0, 242, 254, 0.15)',
+                                      color: item.type === 'lost' ? 'var(--accent-lost)' : 'var(--accent-found)'
+                                    }}>
+                                      {item.type === 'lost' ? t('explore.badge_lost') : t('explore.badge_found')}
+                                    </span>
+                                    <span style={{
+                                      ...styles.badgeSmall,
+                                      backgroundColor: isCreatorVerified ? 'rgba(0, 242, 254, 0.1)' : 'rgba(255, 74, 107, 0.1)',
+                                      color: isCreatorVerified ? 'var(--accent-found)' : 'var(--accent-lost)',
+                                      border: `1px solid ${isCreatorVerified ? 'rgba(0, 242, 254, 0.2)' : 'rgba(255, 74, 107, 0.2)'}`
+                                    }}>
+                                      {isCreatorVerified ? t('explore.badge_verified') : t('explore.badge_guest')}
+                                    </span>
+                                  </div>
+                                  <h4 style={{ ...styles.listTitle, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', margin: 0 }}>{item.title}</h4>
+                                  <div style={{ ...styles.listLoc, margin: 0 }}>
+                                    <MapPin size={12} />
+                                    <span style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{item.location_detail}</span>
+                                  </div>
                                 </div>
-                                <h4 style={{ ...styles.listTitle, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', margin: 0 }}>{item.title}</h4>
-                                <div style={{ ...styles.listLoc, margin: 0 }}>
-                                  <MapPin size={12} />
-                                  <span style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{item.location_detail}</span>
-                                </div>
+
+                                {/* Photo directly next to the text */}
+                                {item.image_url && (
+                                  <img src={item.image_url} alt="" style={styles.listThumbnail} />
+                                )}
                               </div>
 
-                              {/* Photo directly next to the text */}
-                              {item.image_url && (
-                                <img src={item.image_url} alt="" style={styles.listThumbnail} />
-                              )}
-                            </div>
-
-                            {/* Right: Date (at the very far right end) */}
-                            <div style={{ flexShrink: 0, marginLeft: '12px' }}>
-                              <span style={styles.itemTime}>
-                                {getLocaleDateString(item.occurred_at)}
-                              </span>
+                              {/* Right: Date (at the very far right end) */}
+                              <div style={{ flexShrink: 0, marginLeft: '12px' }}>
+                                <span style={styles.itemTime}>
+                                  {getLocaleDateString(item.occurred_at)}
+                                </span>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))
+                        );
+                      })
                     )}
                   </div>
                 </div>
@@ -831,52 +870,8 @@ export default function BottomSheet({
               )}
             </>
           )}
-      {isZoomOpen && selectedItem && selectedItem.image_url && typeof document !== 'undefined' && createPortal(
-        <div style={styles.zoomOverlay} onClick={() => setIsZoomOpen(false)}>
-          {/* Top Close Button */}
-          <button 
-            style={styles.zoomCloseBtn} 
-            onClick={() => setIsZoomOpen(false)}
-            title="닫기"
-          >
-            <X size={24} color="#ffffff" />
-          </button>
-
-          {/* Image Container */}
-          <div style={styles.zoomImageContainer}>
-            <img 
-              src={selectedItem.image_url} 
-              alt={selectedItem.title} 
-              style={{
-                ...styles.zoomImage,
-                transform: `scale(${zoomScale})`,
-              }} 
-              onClick={(e) => {
-                e.stopPropagation(); // Prevent closing overlay when clicking image
-                // Toggle zoom scale between 1 and 2
-                setZoomScale(prev => prev === 1 ? 2 : 1);
-              }}
-            />
-          </div>
-
-          {/* Zoom Control Bar */}
-          <div style={styles.zoomControls} onClick={(e) => e.stopPropagation()}>
-            <button style={styles.zoomBtn} onClick={handleZoomOut} disabled={zoomScale <= 0.5}>
-              <ZoomOut size={18} />
-            </button>
-            <span style={styles.zoomScaleText}>{Math.round(zoomScale * 100)}%</span>
-            <button style={styles.zoomBtn} onClick={handleZoomIn} disabled={zoomScale >= 4}>
-              <ZoomIn size={18} />
-            </button>
-            <button style={styles.zoomBtn} onClick={handleResetZoom}>
-              <RefreshCw size={16} />
-            </button>
-          </div>
-        </div>,
-        document.body
-      )}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
