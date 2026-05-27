@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Compass, LogOut, MapPin, User, ShieldCheck, Globe, ChevronDown, Bell } from 'lucide-react';
 import { Profile, Item, ChatRoom, Notification } from '../lib/types';
-import { db } from '../lib/supabase';
+import { db, supabase, isSupabaseConfigured } from '../lib/supabase';
 import { useTranslation } from '../lib/LanguageContext';
 
 // Component imports
@@ -108,6 +108,72 @@ export default function Home() {
     window.addEventListener('safe_campus_new_notification', handleNewNotification);
     return () => {
       window.removeEventListener('safe_campus_new_notification', handleNewNotification);
+    };
+  }, [activeUser]);
+
+  // Track items list changes to trigger match notifications in real time for newly added items
+  const [prevItems, setPrevItems] = useState<Item[]>([]);
+
+  useEffect(() => {
+    if (!activeUser || items.length === 0) {
+      if (items.length > 0 && prevItems.length === 0) {
+        setPrevItems(items);
+      }
+      return;
+    }
+
+    if (prevItems.length === 0) {
+      setPrevItems(items);
+      return;
+    }
+
+    // Find items that are in the new list but were NOT in the previous list
+    const newItems = items.filter(newItem => !prevItems.some(prevItem => prevItem.id === newItem.id));
+
+    if (newItems.length > 0) {
+      // For each new item, check if it matches the current user's items
+      newItems.forEach(newItem => {
+        // Only run matches for items created by others
+        if (newItem.user_id !== activeUser.id) {
+          db.checkAndGenerateMatches(newItem);
+        }
+      });
+    }
+
+    setPrevItems(items);
+  }, [items, activeUser, prevItems]);
+
+  // Sync database periodically (every 4 seconds) for real-time multiplayer experience
+  useEffect(() => {
+    if (!activeUser) return;
+
+    const interval = setInterval(() => {
+      syncDatabaseState(activeUser.id);
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [activeUser]);
+
+  // Real-time Supabase postgres subscription fallback to sync database state instantly
+  useEffect(() => {
+    if (!activeUser || !isSupabaseConfigured || !supabase) return;
+
+    const channel = supabase
+      .channel('realtime-items-sync')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'items' },
+        async (payload) => {
+          console.log('Real-time database items change detected:', payload);
+          await syncDatabaseState(activeUser.id);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      if (supabase) {
+        supabase.removeChannel(channel);
+      }
     };
   }, [activeUser]);
 
