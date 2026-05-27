@@ -385,4 +385,17 @@ body {
   .hide-mobile {
     display: none !important;
   }
+
+  /* Robust Mobile Dropdown alignment right below the header banner */
+  .notif-dropdown-mobile {
+    position: fixed !important;
+    top: 82px !important;
+    left: 20px !important;
+    right: 20px !important;
+    width: calc(100% - 40px) !important;
+    max-width: calc(100% - 40px) !important;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7) !important;
+    border: 1px solid rgba(0, 242, 254, 0.25) !important;
+    z-index: 9999 !important;
+  }
 }

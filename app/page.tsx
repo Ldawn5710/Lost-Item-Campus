@@ -445,7 +445,7 @@ export default function Home() {
               </button>
               
               {showNotifMenu && (
-                <div style={styles.notifDropdown} className="glass-panel">
+                <div style={styles.notifDropdown} className="glass-panel notif-dropdown-mobile">
                   <div style={styles.notifHeader}>
                     <span style={styles.notifTitle}>{t('notification.title')}</span>
                     {notifications.length > 0 && (
