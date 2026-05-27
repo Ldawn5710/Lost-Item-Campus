@@ -196,10 +196,29 @@ export default function Home() {
   const handleAuthSuccess = (user: Profile, coords?: { lat: number; lng: number }) => {
     setActiveUser(user);
 
-    // Centering coordinates
+    // Centering coordinates (default university fallback)
     const center = coords || { lat: 35.9038, lng: 128.8504 };
     setMapCenter(center);
     setUserLocation(center);
+
+    // Automatically detect and center on the user's actual live GPS location
+    if (typeof navigator !== 'undefined' && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const liveCoords = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          };
+          console.log("Real-time live location detected:", liveCoords);
+          setMapCenter(liveCoords);
+          setUserLocation(liveCoords);
+        },
+        (error) => {
+          console.warn("Real-time geolocation permission denied or failed, using university default:", error);
+        },
+        { enableHighAccuracy: true, timeout: 6000, maximumAge: 0 }
+      );
+    }
 
     syncDatabaseState(user.id);
   };
