@@ -379,3 +379,10 @@ body {
 .bell-pulsing {
   animation: bellPulse 1.8s infinite;
 }
+
+/* Mobile Responsive Helpers */
+@media (max-width: 480px) {
+  .hide-mobile {
+    display: none !important;
+  }
+}
