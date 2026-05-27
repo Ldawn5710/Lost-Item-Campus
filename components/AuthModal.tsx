@@ -39,7 +39,7 @@ export default function AuthModal({ onAuthSuccess }: AuthModalProps) {
     return { name: t('univ.fallback'), lat: 35.9038, lng: 128.8504 };
   };
 
-  const handleSendOtp = (e: React.FormEvent) => {
+  const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     
@@ -66,16 +66,43 @@ export default function AuthModal({ onAuthSuccess }: AuthModalProps) {
 
     setLoading(true);
 
-    // Simulate network delay
-    setTimeout(() => {
+    try {
       const code = Math.floor(100000 + Math.random() * 900000).toString();
-      setGeneratedOtp(code);
-      setStep(2);
-      setLoading(false);
       
-      // Auto-alerting the OTP in development environment for easy use!
-      alert(t('auth.dev_alert', { code }));
-    }, 1200);
+      const response = await fetch('/api/send-otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          code,
+          nickname,
+          isStudent: role === 'student',
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || '인증 코드 발송에 실패했습니다.');
+      }
+
+      if (data.error === 'SMTP_CONFIG_MISSING') {
+        // Fallback for local testing without SMTP configured yet
+        setError(`⚠️ SMTP 환경 변수가 설정되지 않아 실제 이메일을 발송할 수 없습니다. (테스트용 코드: ${data.devCode})`);
+        setGeneratedOtp(data.devCode);
+        setStep(2);
+      } else {
+        setGeneratedOtp(code);
+        setStep(2);
+      }
+    } catch (err: any) {
+      console.error('인증 메일 전송 오류:', err);
+      setError(err.message || '인증번호 전송 중 오류가 발생했습니다. 다시 시도해 주세요.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleVerifyOtp = async (e: React.FormEvent) => {
