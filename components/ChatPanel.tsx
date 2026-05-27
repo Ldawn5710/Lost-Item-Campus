@@ -26,14 +26,19 @@ export default function ChatPanel({
   const [showSafetyAlert, setShowSafetyAlert] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const handleLeaveChat = async () => {
-    if (window.confirm(t('chat.leave_confirm'))) {
-      try {
-        await db.deleteChatRoom(roomId);
-        onBack();
-      } catch (err) {
-        console.error("Error leaving chat room:", err);
-      }
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+
+  const handleLeaveChat = () => {
+    setShowLeaveConfirm(true);
+  };
+
+  const handleLeaveChatConfirm = async () => {
+    try {
+      await db.deleteChatRoom(roomId);
+      setShowLeaveConfirm(false);
+      onBack();
+    } catch (err) {
+      console.error("Error leaving chat room:", err);
     }
   };
 
@@ -165,8 +170,19 @@ export default function ChatPanel({
           <ArrowLeft size={20} color="var(--text-primary)" />
         </button>
         <div style={styles.headerInfo}>
-          <strong style={{ fontSize: '15px' }}>{room.opponent?.nickname}{language === 'ko' ? ' 님' : ''}</strong>
-          <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{room.opponent?.university}</span>
+          <strong style={{ 
+            fontSize: '15px',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis'
+          }}>{room.opponent?.nickname}{language === 'ko' ? ' 님' : ''}</strong>
+          <span style={{ 
+            fontSize: '11px', 
+            color: 'var(--text-secondary)',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis'
+          }}>{room.opponent?.university}</span>
         </div>
         <button 
           style={styles.leaveChatBtn} 
@@ -297,6 +313,37 @@ export default function ChatPanel({
           <Send size={16} />
         </button>
       </form>
+
+      {/* F. Custom Leave Confirmation Modal (PRD 4.5 UX Improvement for Mobile WebViews) */}
+      {showLeaveConfirm && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.modalContent} className="glass-panel">
+            <div style={styles.modalHeader}>
+              <ShieldAlert size={24} color="var(--accent-lost)" style={{ marginBottom: '8px' }} />
+              <h3 style={styles.modalTitle}>{t('chat.leave')}</h3>
+            </div>
+            <p style={styles.modalText}>{t('chat.leave_confirm')}</p>
+            <div style={styles.modalActions}>
+              <button
+                type="button"
+                className="glass-button"
+                style={styles.modalCancelBtn}
+                onClick={() => setShowLeaveConfirm(false)}
+              >
+                {t('common.cancel')}
+              </button>
+              <button
+                type="button"
+                className="glass-button primary"
+                style={styles.modalLeaveBtn}
+                onClick={handleLeaveChatConfirm}
+              >
+                {t('chat.leave')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -329,14 +376,16 @@ const styles: Record<string, React.CSSProperties> = {
     background: 'transparent',
     border: 'none',
     cursor: 'pointer',
-    padding: '4px',
+    padding: '8px',
     display: 'flex',
     alignItems: 'center',
+    touchAction: 'manipulation',
   },
   headerInfo: {
     display: 'flex',
     flexDirection: 'column',
     flex: 1,
+    minWidth: 0,
   },
   leaveChatBtn: {
     background: 'rgba(255, 74, 107, 0.08)',
@@ -344,11 +393,13 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: '16px',
     color: 'var(--text-primary)',
     cursor: 'pointer',
-    padding: '4px 10px',
+    padding: '6px 12px',
+    minHeight: '32px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     transition: 'all 0.2s ease',
+    touchAction: 'manipulation',
   },
   itemCard: {
     display: 'flex',
@@ -491,5 +542,88 @@ const styles: Record<string, React.CSSProperties> = {
     height: '38px',
     padding: 0,
     borderRadius: '50%',
+  },
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    backgroundColor: 'rgba(5, 7, 14, 0.85)',
+    backdropFilter: 'blur(8px)',
+    WebkitBackdropFilter: 'blur(8px)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1100,
+    padding: '20px',
+    boxSizing: 'border-box',
+  },
+  modalContent: {
+    width: '100%',
+    maxWidth: '300px',
+    padding: '24px 20px',
+    borderRadius: '16px',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    textAlign: 'center',
+    boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(10, 14, 26, 0.95)',
+  },
+  modalHeader: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    marginBottom: '12px',
+  },
+  modalTitle: {
+    fontSize: '16px',
+    fontWeight: '700',
+    color: 'var(--text-primary)',
+    margin: '4px 0 0 0',
+  },
+  modalText: {
+    fontSize: '13px',
+    color: 'var(--text-secondary)',
+    lineHeight: '1.5',
+    margin: '0 0 20px 0',
+  },
+  modalActions: {
+    display: 'flex',
+    gap: '10px',
+    width: '100%',
+  },
+  modalCancelBtn: {
+    flex: 1,
+    height: '38px',
+    fontSize: '13px',
+    fontWeight: '600',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    color: 'var(--text-primary)',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    touchAction: 'manipulation',
+  },
+  modalLeaveBtn: {
+    flex: 1,
+    height: '38px',
+    fontSize: '13px',
+    fontWeight: '600',
+    backgroundColor: '#ff4a6b',
+    border: 'none',
+    color: '#ffffff',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxShadow: '0 4px 12px rgba(255, 74, 107, 0.3)',
+    touchAction: 'manipulation',
   },
 };
