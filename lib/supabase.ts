@@ -602,6 +602,7 @@ class SimulatedDatabase {
   async checkAndGenerateMatches(newItem: Item): Promise<void> {
     try {
       const allItems = await this.getItems();
+      const allProfiles = await this.getProfiles();
 
       const wordsOf = (text: string) => {
         return text.toLowerCase()
@@ -625,6 +626,9 @@ class SimulatedDatabase {
         const hasKeywordOverlap = newWords.some(w => otherWords.includes(w));
 
         if (hasKeywordOverlap) {
+          const targetUserId = newItem.type === 'lost' ? newItem.user_id : otherItem.user_id;
+          const recipientProfile = allProfiles.find(p => p.id === targetUserId);
+
           if (newItem.type === 'lost') {
             // New item is lost -> matching is an existing found item -> notify owner of lost (active user)
             await this.saveNotification({
@@ -645,6 +649,26 @@ class SimulatedDatabase {
               item_id: newItem.id,
               is_read: false
             });
+          }
+
+          // Trigger Real-Time Transactional Email Match Alert (SMS/Push alternative!)
+          if (recipientProfile && recipientProfile.email) {
+            fetch('/api/send-match-email', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                recipientEmail: recipientProfile.email,
+                recipientName: recipientProfile.nickname,
+                lostItemTitle: newItem.type === 'lost' ? newItem.title : otherItem.title,
+                foundItemTitle: newItem.type === 'found' ? newItem.title : otherItem.title,
+                foundItemDesc: newItem.type === 'found' ? newItem.description : otherItem.description,
+                itemId: newItem.type === 'found' ? newItem.id : otherItem.id
+              })
+            }).then(res => res.json())
+              .then(data => console.log('Match notification email sent:', data))
+              .catch(err => console.error('Failed to send match email:', err));
           }
         }
       }
