@@ -203,21 +203,33 @@ export default function Home() {
 
     // Automatically detect and center on the user's actual live GPS location
     if (typeof navigator !== 'undefined' && navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const liveCoords = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          };
-          console.log("Real-time live location detected:", liveCoords);
-          setMapCenter(liveCoords);
-          setUserLocation(liveCoords);
-        },
-        (error) => {
-          console.warn("Real-time geolocation permission denied or failed, using university default:", error);
-        },
-        { enableHighAccuracy: true, timeout: 6000, maximumAge: 0 }
-      );
+      const startGps = (highAccuracy: boolean) => {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const liveCoords = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude
+            };
+            console.log(`Real-time live location detected (HighAccuracy: ${highAccuracy}):`, liveCoords);
+            setMapCenter(liveCoords);
+            setUserLocation(liveCoords);
+          },
+          (error) => {
+            console.warn(`Geolocation failed (HighAccuracy: ${highAccuracy}):`, error);
+            if (highAccuracy) {
+              console.log("Attempting low accuracy fallback for PC/Laptop...");
+              startGps(false); // Fallback to low accuracy
+            }
+          },
+          { 
+            enableHighAccuracy: highAccuracy, 
+            timeout: highAccuracy ? 4000 : 10000, 
+            maximumAge: 0 
+          }
+        );
+      };
+
+      startGps(true); // Start with high accuracy
     }
 
     syncDatabaseState(user.id);
